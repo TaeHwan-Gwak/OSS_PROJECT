@@ -111,8 +111,6 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
-    private JButton copyFile;
-    /* File details. */
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
@@ -317,20 +315,7 @@ public class FileManager {
 
             toolBar.addSeparator();
 
-            readable = new JCheckBox("Read  ");
-            readable.setMnemonic('a');
-            // readable.setEnabled(false);
-            toolBar.add(readable);
 
-            writable = new JCheckBox("Write  ");
-            writable.setMnemonic('w');
-            // writable.setEnabled(false);
-            toolBar.add(writable);
-
-            executable = new JCheckBox("Execute");
-            executable.setMnemonic('x');
-            // executable.setEnabled(false);
-            toolBar.add(executable);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -657,36 +642,6 @@ public class FileManager {
         }
 
         gui.repaint();
-    }
-
-    public static boolean copyFile(File from, File to) throws IOException {
-
-        boolean created = to.createNewFile();
-
-        if (created) {
-            FileChannel fromChannel = null;
-            FileChannel toChannel = null;
-            try {
-                fromChannel = new FileInputStream(from).getChannel();
-                toChannel = new FileOutputStream(to).getChannel();
-
-                toChannel.transferFrom(fromChannel, 0, fromChannel.size());
-
-                // set the flags of the to the same as the from
-                to.setReadable(from.canRead());
-                to.setWritable(from.canWrite());
-                to.setExecutable(from.canExecute());
-            } finally {
-                if (fromChannel != null) {
-                    fromChannel.close();
-                }
-                if (toChannel != null) {
-                    toChannel.close();
-                }
-                return false;
-            }
-        }
-        return created;
     }
 
     public static void main(String[] args) {
