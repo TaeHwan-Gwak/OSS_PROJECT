@@ -108,7 +108,6 @@ public class FileManager {
 
     /* File controls. */
     private JButton openFile;
-    private JButton printFile;
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
@@ -295,16 +294,6 @@ public class FileManager {
                         }
                     });
             toolBar.add(newFile);
-
-            copyFile = new JButton("Copy");
-            copyFile.setMnemonic('c');
-            copyFile.addActionListener(
-                    new ActionListener() {
-                        public void actionPerformed(ActionEvent ae) {
-                            showErrorMessage("'Copy' not implemented.", "Not implemented.");
-                        }
-                    });
-            toolBar.add(copyFile);
 
             JButton renameFile = new JButton("Rename");
             renameFile.setMnemonic('r');
