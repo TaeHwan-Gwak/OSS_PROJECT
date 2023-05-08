@@ -121,6 +121,9 @@ public class FileManager {
     private JRadioButton isDirectory;
     private JRadioButton isFile;
 
+    /* author Jung Seungwon */
+    private JButton commitButton;
+
     /* GUI options/containers for new File/Directory creation.  Created lazily. */
     private JPanel newFilePanel;
     private JRadioButton newTypeFile;
@@ -315,6 +318,22 @@ public class FileManager {
 
             toolBar.addSeparator();
 
+            /* delete checkBoxes: readable, writable, executable */
+
+            /* author: Jung seungwon
+            * when commitButton is clicked, we can see the staged file lists
+            * and the textBox that we can write the commit message.
+            * */
+            commitButton = new JButton("Commit");
+            commitButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent ae) {
+                            openCommitDialog();
+                        }
+                    }
+            );
+            toolBar.add(commitButton);
 
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
@@ -573,6 +592,21 @@ public class FileManager {
         tableColumn.setPreferredWidth(width);
         tableColumn.setMaxWidth(width);
         tableColumn.setMinWidth(width);
+    }
+
+
+    /* author: Jung seungwon
+    *  ActionEvent that open the commit dialog when commitButton is clicked.
+    * */
+
+    private void openCommitDialog(){
+        JDialog commitDialog = new JDialog();
+
+        commitDialog.setTitle("Git Commit");
+        commitDialog.setSize(600,400);
+        commitDialog.setLayout(new BorderLayout());
+
+        commitDialog.setVisible(true);
     }
 
     /**
