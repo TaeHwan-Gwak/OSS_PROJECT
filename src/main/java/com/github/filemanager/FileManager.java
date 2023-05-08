@@ -278,24 +278,11 @@ public class FileManager {
                     });
             toolBar.add(editFile);
 
-            printFile = new JButton("Print");
-            printFile.setMnemonic('p');
-            printFile.addActionListener(
-                    new ActionListener() {
-                        public void actionPerformed(ActionEvent ae) {
-                            try {
-                                desktop.print(currentFile);
-                            } catch (Throwable t) {
-                                showThrowable(t);
-                            }
-                        }
-                    });
-            toolBar.add(printFile);
+
 
             // Check the actions are supported on this platform!
             openFile.setEnabled(desktop.isSupported(Desktop.Action.OPEN));
             editFile.setEnabled(desktop.isSupported(Desktop.Action.EDIT));
-            printFile.setEnabled(desktop.isSupported(Desktop.Action.PRINT));
 
             toolBar.addSeparator();
 
