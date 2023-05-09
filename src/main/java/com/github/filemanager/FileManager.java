@@ -36,9 +36,7 @@ import java.awt.image.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -48,6 +46,11 @@ import javax.swing.table.*;
 import javax.swing.tree.*;
 
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
  * A basic File Manager. Requires 1.6+ for the Desktop &amp; SwingWorker classes, amongst other
@@ -141,6 +144,10 @@ public class FileManager {
     private JCheckBox executable;
     private JRadioButton isDirectory;
     private JRadioButton isFile;
+
+    /* author Jung Seungwon */
+    private JButton commitButton;
+    private JPanel commitPanel;
 
     /* GUI options/containers for new File/Directory creation.  Created lazily. */
     private JPanel newFilePanel;
@@ -706,6 +713,77 @@ public class FileManager {
         tableColumn.setPreferredWidth(width);
         tableColumn.setMaxWidth(width);
         tableColumn.setMinWidth(width);
+    }
+
+
+    /* author: Jung seungwon(frankwon11)
+    *  ActionEvent that open the commit dialog when commitButton is clicked.
+    * */
+
+    private void commitButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for commit.", "Select Location");
+            return;
+        }
+
+        if (commitPanel == null) {
+            commitPanel = new JPanel(new BorderLayout(3, 3));
+
+            try{
+//                Repository repository = new FileRepositoryBuilder().readEnvironment().findGitDir().build();
+                Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
+                Git git = new Git(repository);
+                Status status = git.status().call();
+                Set<String> stagedFiles = new HashSet<>();
+                stagedFiles.addAll(status.getAdded());
+//                stagedFiles.addAll(status.getChanged());
+//                stagedFiles.addAll(status.getRemoved());
+
+                DefaultTableModel tableModel = new DefaultTableModel(new String[]{"Staged Files"}, 0);
+                for (String filePath : stagedFiles) {
+                    tableModel.addRow(new Object[]{filePath});
+                }
+                JTable stagedFilesTable = new JTable(tableModel);
+                stagedFilesTable.setModel(tableModel);
+
+
+                JPanel commitMessagePanel = new JPanel(new BorderLayout());
+                JTextArea commitMessageArea = new JTextArea(5, 50);
+                commitMessagePanel.add(new JLabel(currentFile.getAbsolutePath()), BorderLayout.NORTH);
+                commitMessagePanel.add(commitMessageArea, BorderLayout.CENTER);
+
+
+                commitPanel.add(new JLabel("Staged Files:"), BorderLayout.NORTH);
+                commitPanel.add(new JScrollPane(stagedFilesTable), BorderLayout.CENTER);
+                commitPanel.add(commitMessagePanel, BorderLayout.SOUTH);
+
+                int result =
+                        JOptionPane.showConfirmDialog(
+                                gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION) {
+                    try {
+                        String commitMsg = commitMessageArea.getText();
+                        if (commitMsg.trim().isEmpty()) {
+                            showErrorMessage("Commit message cannot be empty.", "Empty Commit Message");
+                            return;
+                        }
+
+                        git.commit().setMessage(commitMsg).call();
+                        git.close();
+
+//                        showInfoMessage("Commit Successful");
+                    } catch (Throwable t) {
+                        showThrowable(t);
+                    }
+                }
+
+            }catch (Exception ae){
+                showErrorMessage("No location selected for commit.", "Select Location");
+                return;
+            }
+        }
+
+        gui.repaint();
     }
 
     /**
