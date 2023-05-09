@@ -540,41 +540,31 @@ public class FileManager {
         if(moveTo != null) {
             try {
                 // git이 관리하는지 확인하는 if문으로 감싸고, else문에 error msg 출력
-//                boolean directory = currentFile.isDirectory();
-//                TreePath parentPath = findTreePath(currentFile.getParentFile());
-//                DefaultMutableTreeNode parentNode =
-//                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
+                boolean directory = currentFile.isDirectory();
+                TreePath parentPath = findTreePath(currentFile.getParentFile());
+                DefaultMutableTreeNode parentNode =
+                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
 
                 String file = currentFile.getName();
                 String path = currentFile.getParent();
 
-                // 일반 파일일 경우 깃무브
-//                if(!directory) {
+                // 깃무브
+                    Process p;
                     String mvCmd = "git mv ";
                     String cmd = "cd " + path + " && " + mvCmd + file + " " + moveTo;
-                    Process p;
                     String[] command = {"/bin/sh", "-c", cmd};
                     p = Runtime.getRuntime().exec(command);
-//                    currentFile.renameTo(new File(currentFile.getParentFile(), moveTo));
-//                }
 
-                // 디렉토리일 경우 깃무브
-//                else{
-//                    String mvCommand = "git mv ";
-//                    String cmd = "cd " + path + " && " + mvCommand + file + " " + moveTo;
-//                    Process p;
-//                    String[] command = {"/bin/sh", "-c", cmd};
-//                    p = Runtime.getRuntime().exec(command);
-//
+                // 디렉토리일 경우 추가 작업( git mv [디렉] [이동할 디렉] )
+                if(directory){
 //                    TreePath currentPath = findTreePath(currentFile);
 //                    System.out.println(currentPath);
 //                    DefaultMutableTreeNode currentNode =
 //                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
 //
 //                    treeModel.removeNodeFromParent(currentNode);
-//                }
-//
-//                showChildren(parentNode);
+                }
+                showChildren(parentNode);
             } catch (Throwable t) {
                 showThrowable(t);
             }
