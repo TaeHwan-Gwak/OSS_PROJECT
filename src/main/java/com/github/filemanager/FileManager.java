@@ -111,7 +111,7 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
-    private JButton gitMv;
+    private JButton mv;
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
@@ -316,15 +316,17 @@ public class FileManager {
 
             toolBar.addSeparator();
 
-            gitMv = new JButton("git mv");
-            //gitMv.setMnemonic('');
-            gitMv.addActionListener(
+            toolBar.add(new JLabel("git "));
+
+            mv = new JButton("mv");
+            //mv.setMnemonic('');
+            mv.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitMv();
+                            mv();
                         }
                     });
-            toolBar.add(gitMv);
+            toolBar.add(mv);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -395,7 +397,7 @@ public class FileManager {
 
                         treeModel.removeNodeFromParent(currentNode);
 
-                        // add a new node..
+                        // add a new node..`
                     }
 
                     showChildren(parentNode);
@@ -525,29 +527,57 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void gitMv() {
+    private void mv() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git mv.", "Select File");
             return;
         }
 
-        String movedFile =
-                JOptionPane.showInputDialog(
-                        "Are you sure you want to git mv this file?");
+        String moveTo =
+                JOptionPane.showInputDialog(gui,
+                        "Text new file name or new path you want to git mv this file.");
+//        받은 moveTo가 올바른 파일명 혹은 디렉토리인지 확인 필요
+        if(moveTo != null) {
+            try {
+                // git이 관리하는지 확인하는 if문으로 감싸고, else문에 error msg 출력
+//                boolean directory = currentFile.isDirectory();
+//                TreePath parentPath = findTreePath(currentFile.getParentFile());
+//                DefaultMutableTreeNode parentNode =
+//                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
 
-        try {
-            String base = currentFile.getPath();
-            String basefile = currentFile.getName();
-            String path = base.replace(basefile, "");
+                String file = currentFile.getName();
+                String path = currentFile.getParent();
 
-            String mvCommand = "git mv ";
-            String file = currentFile.getName();
-            String cmd = "cd " + path + " && " + mvCommand + file + " " + movedFile;
-            Process p;
-            String[] command = {"/bin/sh","-c", cmd};
-            p = Runtime.getRuntime().exec(command);
-        }
-        catch(IOException ex) {
+                // 일반 파일일 경우 깃무브
+//                if(!directory) {
+                    String mvCmd = "git mv ";
+                    String cmd = "cd " + path + " && " + mvCmd + file + " " + moveTo;
+                    Process p;
+                    String[] command = {"/bin/sh", "-c", cmd};
+                    p = Runtime.getRuntime().exec(command);
+//                    currentFile.renameTo(new File(currentFile.getParentFile(), moveTo));
+//                }
+
+                // 디렉토리일 경우 깃무브
+//                else{
+//                    String mvCommand = "git mv ";
+//                    String cmd = "cd " + path + " && " + mvCommand + file + " " + moveTo;
+//                    Process p;
+//                    String[] command = {"/bin/sh", "-c", cmd};
+//                    p = Runtime.getRuntime().exec(command);
+//
+//                    TreePath currentPath = findTreePath(currentFile);
+//                    System.out.println(currentPath);
+//                    DefaultMutableTreeNode currentNode =
+//                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+//
+//                    treeModel.removeNodeFromParent(currentNode);
+//                }
+//
+//                showChildren(parentNode);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
         }
         gui.repaint();
     }
