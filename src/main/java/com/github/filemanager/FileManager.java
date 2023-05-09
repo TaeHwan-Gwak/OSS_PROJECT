@@ -36,10 +36,7 @@ import java.awt.image.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -48,8 +45,10 @@ import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.*;
 import javax.swing.tree.*;
 
+//import jdk.tools.jlink.internal.plugins.ExcludePlugin;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -607,73 +606,6 @@ public class FileManager {
     *  ActionEvent that open the commit dialog when commitButton is clicked.
     * */
 
-//    private void commitButton(){
-//        JDialog commitDialog = new JDialog();
-//
-//        commitDialog.setTitle("Git Commit");
-//        commitDialog.setSize(600,400);
-//        commitDialog.setLayout(new BorderLayout());
-//
-//        commitDialog.setVisible(true);
-//    }
-
-//    private void commitButton(){
-//            if(currentFile == null){
-//                showErrorMessage("No location selected for checking staged file.", "Select Location");
-//                return;
-//            }
-//
-//            if(commitPanel == null){
-//                try{
-//                    Repository repository = new FileRepositoryBuilder().readEnvironment().findGitDir().build();
-//                    Git git = new Git(repository);
-//                }catch (IOException | GitAPIException ex){
-//                    ex.printStackTrace();
-//                    JOptionPane.showMessageDialog(commitPanel, "Error Opening Repository!");
-//                    return;
-//                }
-//
-//
-//                commitPanel = new JPanel(new BorderLayout(3,3));
-//
-//                List<String> stagedFiles = new ArrayList<String>();
-//                stagedFiles.add("123");
-//                stagedFiles.add("456");
-//
-//                // set the tableModel that makes StagedFilesTable
-//                DefaultTableModel tableModel = new DefaultTableModel(new String[]{"Staged Files"}, 0);
-//                for(String filePath : stagedFiles){
-//                    tableModel.addRow(new Object[]{filePath});
-//                }
-//
-//                // set the stagedFilesTable that contains staged files.
-//                JTable stagedFilesTable = new JTable(tableModel);
-//                commitPanel.add(new JScrollPane(stagedFilesTable),BorderLayout.CENTER);
-//
-//
-//                JPanel commitMessagePanel = new JPanel(new BorderLayout());
-//                JLabel commitMessageLabel = new JLabel("Commit Message:");
-//                JTextArea commitMessageArea = new JTextArea(5, 50);
-//                commitMessagePanel.add(commitMessageLabel, BorderLayout.NORTH);
-//                commitMessagePanel.add(commitMessageArea, BorderLayout.CENTER);
-//                commitButton.add(commitMessagePanel, BorderLayout.SOUTH);
-//
-//                JPanel buttonPanel = new JPanel();
-//                JButton confirmButton = new JButton("Commit");
-//                JButton cancelButton = new JButton("Cancel");
-//                buttonPanel.add(confirmButton);
-//                buttonPanel.add(cancelButton);
-//                commitMessagePanel.add(buttonPanel, BorderLayout.SOUTH);
-//
-//                int result = JOptionPane.showConfirmDialog(gui, commitPanel, "Git Commit", JOptionPane.OK_CANCEL_OPTION);
-//
-//    //            if(result==JOptionPane.OK_OPTION)
-//            }
-//
-//            gui.repaint();
-//
-//    }
-
     private void commitButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for commit.", "Select Location");
@@ -684,20 +616,26 @@ public class FileManager {
             commitPanel = new JPanel(new BorderLayout(3, 3));
 
             try{
-                Repository repository = new FileRepositoryBuilder().readEnvironment().findGitDir().build();
+//                Repository repository = new FileRepositoryBuilder().readEnvironment().findGitDir().build();
+                Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
                 Git git = new Git(repository);
-                Set<String> stagedFiles = git.status().call().getAdded();
+                Status status = git.status().call();
+                Set<String> stagedFiles = new HashSet<>();
+                stagedFiles.addAll(status.getAdded());
+//                stagedFiles.addAll(status.getChanged());
+//                stagedFiles.addAll(status.getRemoved());
 
                 DefaultTableModel tableModel = new DefaultTableModel(new String[]{"Staged Files"}, 0);
                 for (String filePath : stagedFiles) {
                     tableModel.addRow(new Object[]{filePath});
                 }
                 JTable stagedFilesTable = new JTable(tableModel);
+                stagedFilesTable.setModel(tableModel);
 
 
                 JPanel commitMessagePanel = new JPanel(new BorderLayout());
                 JTextArea commitMessageArea = new JTextArea(5, 50);
-                commitMessagePanel.add(new JLabel("Commit Message:"), BorderLayout.NORTH);
+                commitMessagePanel.add(new JLabel(currentFile.getAbsolutePath()), BorderLayout.NORTH);
                 commitMessagePanel.add(commitMessageArea, BorderLayout.CENTER);
 
 
@@ -705,32 +643,32 @@ public class FileManager {
                 commitPanel.add(new JScrollPane(stagedFilesTable), BorderLayout.CENTER);
                 commitPanel.add(commitMessagePanel, BorderLayout.SOUTH);
 
-            }catch (Exception e){
+                int result =
+                        JOptionPane.showConfirmDialog(
+                                gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION) {
+                    try {
+                        String commitMsg = commitMessageArea.getText();
+                        if (commitMsg.trim().isEmpty()) {
+                            showErrorMessage("Commit message cannot be empty.", "Empty Commit Message");
+                            return;
+                        }
+
+                        git.commit().setMessage(commitMsg).call();
+                        git.close();
+
+//                        showInfoMessage("Commit Successful");
+                    } catch (Throwable t) {
+                        showThrowable(t);
+                    }
+                }
+
+            }catch (Exception ae){
+                showErrorMessage("No location selected for commit.", "Select Location");
                 return;
             }
         }
 
-        int result =
-                JOptionPane.showConfirmDialog(
-                        gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
-//        if (result == JOptionPane.OK_OPTION) {
-//            try {
-//                String commitMsg = commitMessage.getText();
-//                if (commitMsg.trim().isEmpty()) {
-//                    showErrorMessage("Commit message cannot be empty.", "Empty Commit Message");
-//                    return;
-//                }
-//
-//                Git git = Git.open(currentFile.getAbsoluteFile());
-//                git.add().addFilepattern(".").call();
-//                git.commit().setMessage(commitMsg).call();
-//                git.close();
-//
-//                showInfoMessage("Changes committed successfully.", "Commit Successful");
-//            } catch (Throwable t) {
-//                showThrowable(t);
-//            }
-//        }
         gui.repaint();
     }
 
