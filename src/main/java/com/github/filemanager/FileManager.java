@@ -616,12 +616,25 @@ public class FileManager {
                 options[0]
         );
 
-        if (result == JOptionPane.OK_OPTION) {
+        if (result == 2) {
             try {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
                 String gitReCommand = "git restore ";
+                String cmd = "cd " + path + " && " + gitReCommand + file;
+                Process p;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        } else if (result == 1) {
+            try {
+                String file = currentFile.getName();
+                String path = currentFile.getPath().replace(file, "");
+
+                String gitReCommand = "git restore --staged ";
                 String cmd = "cd " + path + " && " + gitReCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
