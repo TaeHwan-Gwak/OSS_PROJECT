@@ -982,45 +982,6 @@ class FileTableModel extends AbstractTableModel {
     public Object getValueAt(int row, int column) {
         File file = files[row];
 
-        /*
-        String name = file.getName();
-
-        try {
-            String path = file.getPath();
-            String rPath = path.replace(name, "");
-
-            String cmd = "cd " + rPath + " && " + "git status -s " + name;
-            Process p;
-
-            String[] command = {"/bin/sh", "-c", cmd};
-            p = Runtime.getRuntime().exec(command);
-
-            // 명령어 실행을 위한 프로세스 빌더 생성
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-            // 출력 결과를 저장할 문자열 버퍼 생성
-            StringBuilder output = new StringBuilder();
-
-            // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-            }
-
-            String result;
-
-            if (output.toString().contains("fatal")) {
-                result = "fatal";
-            } else {
-                String status = output.toString().substring(0, 2);
-                result = status;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-         */
-
         switch (column) {
             case 0:
                 return fileSystemView.getSystemIcon(file);
@@ -1033,7 +994,24 @@ class FileTableModel extends AbstractTableModel {
             case 4:
                 return file.lastModified();
             case 5:
-                return file.canRead();
+                try {
+                    // Get the repository
+                    Repository repository = new FileRepositoryBuilder().setWorkTree(file.getAbsoluteFile()).findGitDir().build();
+                    Git git = new Git(repository);
+                    Status status = git.status().call();
+                    Set<String> stagedFiles = new HashSet<>();
+                    stagedFiles.addAll(status.getAdded());
+
+                    // Analyze the status and return the result
+                    if (stagedFiles.contains(file.getName())) {
+                        return "Added";
+                    } else {
+                        return "Unknown";
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Error";
+                }
             default:
                 System.err.println("Logic Error");
         }
@@ -1053,6 +1031,7 @@ class FileTableModel extends AbstractTableModel {
             case 4:
                 return Date.class;
             case 5:
+                return String.class;
         }
         return String.class;
     }
