@@ -343,7 +343,6 @@ public class FileManager {
             toolBar.addSeparator();
 
             gitAdd = new JButton("add");
-            //gitMv.setMnemonic('');
             gitAdd.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
@@ -353,7 +352,6 @@ public class FileManager {
             toolBar.add(gitAdd);
 
             gitRestore = new JButton("restore");
-            //gitMv.setMnemonic('');
             gitRestore.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
@@ -362,17 +360,35 @@ public class FileManager {
                     });
             toolBar.add(gitRestore);
 
-            /*
-            gitAdd = new JButton("add");
-            //gitMv.setMnemonic('');
-            gitAdd.addActionListener(
+            gitRm = new JButton("rm");
+            gitRm.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitAdd();
+                            gitRm();
                         }
                     });
-            toolBar.add(gitAdd);
-            */
+            toolBar.add(gitRm);
+
+
+            toolBar.addSeparator();
+
+            /* delete checkBoxes: readable, writable, executable */
+
+            /* author: Jung seungwon
+             * when commitButton is clicked, we can see the staged file lists
+             * and the textBox that we can write the commit message.
+             * */
+            commitButton = new JButton("Commit");
+            commitButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent ae) {
+                            commitButton();
+                        }
+                    }
+            );
+            toolBar.add(commitButton);
+
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -606,7 +622,7 @@ public class FileManager {
 
     private void gitRestore() {
         if (currentFile == null) {
-            showErrorMessage("No file selected for git add.", "Select File");
+            showErrorMessage("No file selected for git restore.", "Select File");
             return;
         }
 
@@ -642,6 +658,56 @@ public class FileManager {
                 String path = currentFile.getPath().replace(file, "");
 
                 String gitReCommand = "git restore --staged ";
+                String cmd = "cd " + path + " && " + gitReCommand + file;
+                Process p;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+
+        gui.repaint();
+    }
+
+    private void gitRm() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git rm.", "Select File");
+            return;
+        }
+
+        Object[] options = {"Cancel", "rm -cached", "rm"};
+
+        int result = JOptionPane.showOptionDialog(
+                gui,
+                "Are you sure you want to git rm this file?",
+                "Git Rm File",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        if (result == 2) {
+            try {
+                String file = currentFile.getName();
+                String path = currentFile.getPath().replace(file, "");
+
+                String gitReCommand = "git rm ";
+                String cmd = "cd " + path + " && " + gitReCommand + file;
+                Process p;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        } else if (result == 1) {
+            try {
+                String file = currentFile.getName();
+                String path = currentFile.getPath().replace(file, "");
+
+                String gitReCommand = "git rm --cached ";
                 String cmd = "cd " + path + " && " + gitReCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
