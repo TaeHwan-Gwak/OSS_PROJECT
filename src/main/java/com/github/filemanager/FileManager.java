@@ -603,12 +603,18 @@ public class FileManager {
             return;
         }
 
-        int result =
-                JOptionPane.showConfirmDialog(
-                        gui,
-                        "Are you sure you want to git restore this file?",
-                        "Git Add File",
-                        JOptionPane.ERROR_MESSAGE);
+        Object[] options = {"Cancel", "restore --staged", "restore"};
+
+        int result = JOptionPane.showOptionDialog(
+                gui,
+                "Are you sure you want to git restore this file?",
+                "Git Restore File",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
 
         if (result == JOptionPane.OK_OPTION) {
             try {
