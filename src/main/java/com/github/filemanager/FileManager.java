@@ -345,6 +345,27 @@ public class FileManager {
                     });
             toolBar.add(gitAdd);
 
+            gitRestore = new JButton("restore");
+            //gitMv.setMnemonic('');
+            gitRestore.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            gitRestore();
+                        }
+                    });
+            toolBar.add(gitRestore);
+
+            /*
+            gitAdd = new JButton("add");
+            //gitMv.setMnemonic('');
+            gitAdd.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            gitAdd();
+                        }
+                    });
+            toolBar.add(gitAdd);
+            */
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -565,6 +586,37 @@ public class FileManager {
 
                 String gitAddCommand = "git add ";
                 String cmd = "cd " + path + " && " + gitAddCommand + file;
+                Process p;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+
+        gui.repaint();
+    }
+
+    private void gitRestore() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git add.", "Select File");
+            return;
+        }
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui,
+                        "Are you sure you want to git restore this file?",
+                        "Git Add File",
+                        JOptionPane.ERROR_MESSAGE);
+
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                String file = currentFile.getName();
+                String path = currentFile.getPath().replace(file, "");
+
+                String gitReCommand = "git restore ";
+                String cmd = "cd " + path + " && " + gitReCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
