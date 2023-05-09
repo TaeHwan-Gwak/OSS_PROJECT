@@ -968,7 +968,7 @@ class FileTableModel extends AbstractTableModel {
     private File[] files;
     private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
     private String[] columns = {
-            "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
+            "Icon", "File", "Path/name", "Size", "Last Modified", "status",
     };
 
     FileTableModel() {
@@ -981,6 +981,46 @@ class FileTableModel extends AbstractTableModel {
 
     public Object getValueAt(int row, int column) {
         File file = files[row];
+
+        /*
+        String name = file.getName();
+
+        try {
+            String path = file.getPath();
+            String rPath = path.replace(name, "");
+
+            String cmd = "cd " + rPath + " && " + "git status -s " + name;
+            Process p;
+
+            String[] command = {"/bin/sh", "-c", cmd};
+            p = Runtime.getRuntime().exec(command);
+
+            // 명령어 실행을 위한 프로세스 빌더 생성
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            // 출력 결과를 저장할 문자열 버퍼 생성
+            StringBuilder output = new StringBuilder();
+
+            // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            String result;
+
+            if (output.toString().contains("fatal")) {
+                result = "fatal";
+            } else {
+                String status = output.toString().substring(0, 2);
+                result = status;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+         */
+
         switch (column) {
             case 0:
                 return fileSystemView.getSystemIcon(file);
@@ -994,14 +1034,6 @@ class FileTableModel extends AbstractTableModel {
                 return file.lastModified();
             case 5:
                 return file.canRead();
-            case 6:
-                return file.canWrite();
-            case 7:
-                return file.canExecute();
-            case 8:
-                return file.isDirectory();
-            case 9:
-                return file.isFile();
             default:
                 System.err.println("Logic Error");
         }
@@ -1021,11 +1053,6 @@ class FileTableModel extends AbstractTableModel {
             case 4:
                 return Date.class;
             case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 9:
-                return Boolean.class;
         }
         return String.class;
     }
