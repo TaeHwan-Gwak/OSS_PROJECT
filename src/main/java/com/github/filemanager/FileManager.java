@@ -111,6 +111,7 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
+    private JButton gitMv;
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
@@ -315,7 +316,15 @@ public class FileManager {
 
             toolBar.addSeparator();
 
-
+            gitMv = new JButton("git mv");
+            //gitMv.setMnemonic('');
+            gitMv.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            gitMv();
+                        }
+                    });
+            toolBar.add(gitMv);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -512,6 +521,33 @@ public class FileManager {
             } catch (Throwable t) {
                 showThrowable(t);
             }
+        }
+        gui.repaint();
+    }
+
+    private void gitMv() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git mv.", "Select File");
+            return;
+        }
+
+        String movedFile =
+                JOptionPane.showInputDialog(
+                        "Are you sure you want to git mv this file?");
+
+        try {
+            String base = currentFile.getPath();
+            String basefile = currentFile.getName();
+            String path = base.replace(basefile, "");
+
+            String mvCommand = "git mv ";
+            String file = currentFile.getName();
+            String cmd = "cd " + path + " && " + mvCommand + file + " " + movedFile;
+            Process p;
+            String[] command = {"/bin/sh","-c", cmd};
+            p = Runtime.getRuntime().exec(command);
+        }
+        catch(IOException ex) {
         }
         gui.repaint();
     }
