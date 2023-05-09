@@ -335,7 +335,7 @@ public class FileManager {
 
             toolBar.addSeparator();
 
-            gitAdd = new JButton("mv");
+            gitAdd = new JButton("add");
             //gitMv.setMnemonic('');
             gitAdd.addActionListener(
                     new ActionListener() {
