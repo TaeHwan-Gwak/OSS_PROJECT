@@ -46,6 +46,7 @@ import javax.swing.event.*;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.table.*;
 import javax.swing.tree.*;
+
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -77,29 +78,45 @@ import org.apache.commons.io.FileUtils;
  */
 public class FileManager {
 
-    /** Title of the application */
+    /**
+     * Title of the application
+     */
     public static final String APP_TITLE = "FileMan";
-    /** Used to open/edit/print files. */
+    /**
+     * Used to open/edit/print files.
+     */
     private Desktop desktop;
-    /** Provides nice icons and names for files. */
+    /**
+     * Provides nice icons and names for files.
+     */
     private FileSystemView fileSystemView;
 
-    /** currently selected File. */
+    /**
+     * currently selected File.
+     */
     private File currentFile;
 
-    /** Main GUI container */
+    /**
+     * Main GUI container
+     */
     private JPanel gui;
 
-    /** File-system tree. Built Lazily */
+    /**
+     * File-system tree. Built Lazily
+     */
     private JTree tree;
 
     private DefaultTreeModel treeModel;
 
-    /** Directory listing */
+    /**
+     * Directory listing
+     */
     private JTable table;
 
     private JProgressBar progressBar;
-    /** Table model for File[]. */
+    /**
+     * Table model for File[].
+     */
     private FileTableModel fileTableModel;
 
     private ListSelectionListener listSelectionListener;
@@ -111,6 +128,10 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
+    private JButton gitAdd;
+    private JButton gitRestore;
+    private JButton gitRm;
+
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
@@ -276,7 +297,6 @@ public class FileManager {
             toolBar.add(editFile);
 
 
-
             // Check the actions are supported on this platform!
             openFile.setEnabled(desktop.isSupported(Desktop.Action.OPEN));
             editFile.setEnabled(desktop.isSupported(Desktop.Action.EDIT));
@@ -315,6 +335,15 @@ public class FileManager {
 
             toolBar.addSeparator();
 
+            gitAdd = new JButton("mv");
+            //gitMv.setMnemonic('');
+            gitAdd.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            gitAdd();
+                        }
+                    });
+            toolBar.add(gitAdd);
 
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
@@ -516,6 +545,37 @@ public class FileManager {
         gui.repaint();
     }
 
+    private void gitAdd() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git add.", "Select File");
+            return;
+        }
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui,
+                        "Are you sure you want to git add this file?",
+                        "Git Add File",
+                        JOptionPane.ERROR_MESSAGE);
+
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                String file = currentFile.getName();
+                String path = currentFile.getPath().replace(file, "");
+
+                String gitAddCommand = "git add ";
+                String cmd = "cd " + path + " && " + gitAddCommand + file;
+                Process p;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+
+        gui.repaint();
+    }
+
     private void showErrorMessage(String errorMessage, String errorTitle) {
         JOptionPane.showMessageDialog(gui, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
     }
@@ -526,7 +586,9 @@ public class FileManager {
         gui.repaint();
     }
 
-    /** Update the table on the EDT */
+    /**
+     * Update the table on the EDT
+     */
     private void setTableData(final File[] files) {
         SwingUtilities.invokeLater(
                 new Runnable() {
@@ -620,7 +682,9 @@ public class FileManager {
         worker.execute();
     }
 
-    /** Update the File details view with the details of this File. */
+    /**
+     * Update the File details view with the details of this File.
+     */
     private void setFileDetails(File file) {
         currentFile = file;
         Icon icon = fileSystemView.getSystemIcon(file);
@@ -681,13 +745,15 @@ public class FileManager {
     }
 }
 
-/** A TableModel to hold File[]. */
+/**
+ * A TableModel to hold File[].
+ */
 class FileTableModel extends AbstractTableModel {
 
     private File[] files;
     private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
     private String[] columns = {
-        "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
+            "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
     };
 
     FileTableModel() {
@@ -767,7 +833,9 @@ class FileTableModel extends AbstractTableModel {
     }
 }
 
-/** A TreeCellRenderer for a File. */
+/**
+ * A TreeCellRenderer for a File.
+ */
 class FileTreeCellRenderer extends DefaultTreeCellRenderer {
 
     private FileSystemView fileSystemView;
