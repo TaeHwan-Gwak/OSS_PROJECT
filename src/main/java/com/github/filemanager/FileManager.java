@@ -84,7 +84,7 @@ public class FileManager {
     /**
      * Title of the application
      */
-    public static final String APP_TITLE = "FileMan";
+    public static final String APP_TITLE = "FileManager";
     /**
      * Used to open/edit/print files.
      */
@@ -131,9 +131,9 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
-    private JButton gitAdd;
-    private JButton gitRestore;
-    private JButton gitRm;
+    private JButton add;
+    private JButton restore;
+    private JButton rm;
 
     private JLabel fileName;
     private JTextField path;
@@ -145,7 +145,6 @@ public class FileManager {
     private JRadioButton isDirectory;
     private JRadioButton isFile;
 
-    /* author Jung Seungwon */
     private JButton commitButton;
     private JPanel commitPanel;
 
@@ -342,32 +341,32 @@ public class FileManager {
 
             toolBar.addSeparator();
 
-            gitAdd = new JButton("add");
-            gitAdd.addActionListener(
+            add = new JButton("add");
+            add.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitAdd();
+                            add();
                         }
                     });
-            toolBar.add(gitAdd);
+            toolBar.add(add);
 
-            gitRestore = new JButton("restore");
-            gitRestore.addActionListener(
+            restore = new JButton("restore");
+            restore.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitRestore();
+                            restore();
                         }
                     });
-            toolBar.add(gitRestore);
+            toolBar.add(restore);
 
-            gitRm = new JButton("rm");
-            gitRm.addActionListener(
+            rm = new JButton("rm");
+            rm.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitRm();
+                            rm();
                         }
                     });
-            toolBar.add(gitRm);
+            toolBar.add(rm);
 
 
             toolBar.addSeparator();
@@ -592,7 +591,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void gitAdd() {
+    private void add() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git add.", "Select File");
             return;
@@ -610,8 +609,8 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitAddCommand = "git add ";
-                String cmd = "cd " + path + " && " + gitAddCommand + file;
+                String addCommand = "git add ";
+                String cmd = "cd " + path + " && " + addCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
@@ -623,7 +622,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void gitRestore() {
+    private void restore() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git restore.", "Select File");
             return;
@@ -673,7 +672,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void gitRm() {
+    private void rm() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git rm.", "Select File");
             return;
@@ -804,6 +803,12 @@ private void commitButton() {
         showErrorMessage("No location selected for commit.", "Select Location");
         return;
     }
+    File gitDir = findGitDir(currentFile.getAbsoluteFile());
+    if (gitDir == null) {
+        // Handle the case where there is no .git directory found
+        showErrorMessage("This directory doesn't use git","No Git Directory");
+        return; // Exit the method without creating the commit panel
+    }
 
     // to separate ui and model to reopen the commit button.
     JPanel commitPanel = createCommitPanel();
@@ -828,11 +833,11 @@ private void commitButton() {
                 return;
             }
 
-            File gitDir = findGitDir(currentFile.getAbsoluteFile());
-            if (gitDir == null) {
-                // Handle the case where there is no .git directory found
-                showErrorMessage("This directory doesn't use git","No Git Directory");
-            }
+//            File gitDir = findGitDir(currentFile.getAbsoluteFile());
+//            if (gitDir == null) {
+//                // Handle the case where there is no .git directory found
+//                showErrorMessage("This directory doesn't use git","No Git Directory");
+//            }
 
             // get the repository to git command.
             Repository repository =
@@ -1035,7 +1040,7 @@ private void commitButton() {
 class FileTableModel extends AbstractTableModel {
 
     private File[] files;
-    private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
+    private FileSystemView fileSystemView = FileSystemView. getFileSystemView();
     private String[] columns = {
             "Icon", "File", "Path/name", "Size", "Last Modified", "status",
     };
