@@ -610,7 +610,6 @@ public class FileManager {
     }
 
 
-
     private void gitAdd() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git add.", "Select File");
@@ -620,12 +619,12 @@ public class FileManager {
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
             // Handle the case where there is no .git directory found
-            showErrorMessage("This directory doesn't use git","No Git Directory");
+            showErrorMessage("This directory doesn't use git", "No Git Directory");
             return;
         }
 
         if (currentFile.isDirectory()) {
-            showErrorMessage("Directory cannot be added","D can't add");
+            showErrorMessage("Directory cannot be added", "D can't add");
             return;
         }
 
@@ -664,12 +663,12 @@ public class FileManager {
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
             // Handle the case where there is no .git directory found
-            showErrorMessage("This directory doesn't use git","No Git Directory");
+            showErrorMessage("This directory doesn't use git", "No Git Directory");
             return;
         }
 
         if (currentFile.isDirectory()) {
-            showErrorMessage("Directory cannot be restored","D can't restore");
+            showErrorMessage("Directory cannot be restored", "D can't restore");
             return;
         }
 
@@ -726,12 +725,12 @@ public class FileManager {
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
             // Handle the case where there is no .git directory found
-            showErrorMessage("This directory doesn't use git","No Git Directory");
+            showErrorMessage("This directory doesn't use git", "No Git Directory");
             return;
         }
 
         if (currentFile.isDirectory()) {
-            showErrorMessage("Directory cannot be rm","D can't rm");
+            showErrorMessage("Directory cannot be rm", "D can't rm");
             return;
         }
 
@@ -789,7 +788,7 @@ public class FileManager {
                 JOptionPane.showInputDialog(gui,
                         "Text new file name or new path you want to git mv this file.");
 //        받은 moveTo가 올바른 파일명 혹은 디렉토리인지 확인 필요
-        if(moveTo != null) {
+        if (moveTo != null) {
             try {
                 // git이 관리하는지 확인하는 if문으로 감싸고, else문에 error msg 출력
 
@@ -804,7 +803,6 @@ public class FileManager {
                 String cmd = "cd " + path + " && git mv " + file + " " + moveTo;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
-
 
 
                 //파일 띄워야돼....
@@ -848,12 +846,12 @@ public class FileManager {
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir != null) {
             // Handle the case where there is no .git directory found
-            showErrorMessage("This directory already use git","Already Git Directory");
+            showErrorMessage("This directory already use git", "Already Git Directory");
             return;
         }
 
         if (currentFile.isFile()) {
-            showErrorMessage("File cannot be init","F can't restore");
+            showErrorMessage("File cannot be init", "F can't restore");
             return;
         }
 
@@ -949,7 +947,7 @@ public class FileManager {
      * findGitDir do finding the .git dir from currentFile variance.
      * if There is .git return .git's file.
      * else return null
-     * */
+     */
     private File findGitDir(File directory) {
         File gitDir = new File(directory, ".git");
         if (gitDir.exists() && gitDir.isDirectory()) {
@@ -959,6 +957,7 @@ public class FileManager {
             return parent != null ? findGitDir(parent) : null;
         }
     }
+
     private void commitButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for commit.", "Select Location");
@@ -990,7 +989,7 @@ public class FileManager {
                 File gitDir = findGitDir(currentFile.getAbsoluteFile());
                 if (gitDir == null) {
                     // Handle the case where there is no .git directory found
-                    showErrorMessage("This directory doesn't use git","No Git Directory");
+                    showErrorMessage("This directory doesn't use git", "No Git Directory");
                 }
                 Repository repository =
                         new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
@@ -1017,7 +1016,7 @@ public class FileManager {
             File gitDir = findGitDir(currentFile.getAbsoluteFile());
             if (gitDir == null) {
                 // Handle the case where there is no .git directory found
-                showErrorMessage("This directory doesn't use git","No Git Directory");
+                showErrorMessage("This directory doesn't use git", "No Git Directory");
             }
             Repository repository =
                     new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
@@ -1217,7 +1216,7 @@ class FileTableModel extends AbstractTableModel {
                     File gitDir = findGitDir(file.getAbsoluteFile());
                     if (gitDir == null) {
                         return "none";
-                    } else if (gitDir != null && file.isDirectory() ) {
+                    } else if (gitDir != null && file.isDirectory()) {
                         return "gitDir";
                     }
 
@@ -1237,16 +1236,13 @@ class FileTableModel extends AbstractTableModel {
 
                     // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
                     String line;
-                    while ((line = reader.readLine()) != null) {
+                    if ((line = reader.readLine()) != null) {
                         output.append(line).append("\n");
-                    }
-
-                    if(line == null) {
-                        return "C"; // committed;
+                    } else {
+                        return "C";
                     }
 
                     String status = output.toString().substring(0, 2);
-
                     return status;
 
                 } catch (Exception e) {
