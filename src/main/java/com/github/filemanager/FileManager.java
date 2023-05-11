@@ -379,7 +379,7 @@ public class FileManager {
             * and the textBox that we can write the commit message.
             * */
 
-            commitButton = new JButton("Commit");
+            commitButton = new JButton("commit");
 
             commitButton.addActionListener(
                     new ActionListener() {
