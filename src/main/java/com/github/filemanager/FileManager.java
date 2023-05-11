@@ -84,7 +84,7 @@ public class FileManager {
     /**
      * Title of the application
      */
-    public static final String APP_TITLE = "FileMan";
+    public static final String APP_TITLE = "FileManager";
     /**
      * Used to open/edit/print files.
      */
@@ -146,10 +146,6 @@ public class FileManager {
     private JRadioButton isDirectory;
     private JRadioButton isFile;
     private JButton init;
-
-    /* author Jung Seungwon */
-    private JButton commitButton;
-    private JPanel commitPanel;
 
     /* author Jung Seungwon */
     private JButton commitButton;
@@ -348,6 +344,8 @@ public class FileManager {
 
             toolBar.addSeparator();
 
+            toolBar.add(new JLabel("git "));
+
             gitAdd = new JButton("add");
             gitAdd.addActionListener(
                     new ActionListener() {
@@ -397,13 +395,8 @@ public class FileManager {
                     });
             toolBar.add(init);
 
-            /* delete checkBoxes: readable, writable, executable */
 
-            /* author: Jung seungwon
-             * when commitButton is clicked, we can see the staged file lists
-             * and the textBox that we can write the commit message.
-             * */
-            commitButton = new JButton("Commit");
+            commitButton = new JButton("commit");
             commitButton.addActionListener(
                     new ActionListener() {
                         @Override
