@@ -783,8 +783,8 @@ public class FileManager {
 
 
     /* author: Jung seungwon(frankwon11)
-    *  ActionEvent that open the commit dialog when commitButton is clicked.
-    * */
+     *  ActionEvent that open the commit dialog when commitButton is clicked.
+     * */
 
     private void commitButton() {
         if (currentFile == null) {
@@ -795,7 +795,7 @@ public class FileManager {
         if (commitPanel == null) {
             commitPanel = new JPanel(new BorderLayout(3, 3));
 
-            try{
+            try {
 //                Repository repository = new FileRepositoryBuilder().readEnvironment().findGitDir().build();
                 Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
                 Git git = new Git(repository);
@@ -843,7 +843,7 @@ public class FileManager {
                     }
                 }
 
-            }catch (Exception ae){
+            } catch (Exception ae) {
                 showErrorMessage("No location selected for commit.", "Select Location");
                 return;
             }
@@ -979,6 +979,17 @@ class FileTableModel extends AbstractTableModel {
         this.files = files;
     }
 
+    private File findGitDir(File directory) {
+        File gitDir = new File(directory, ".git");
+        if (gitDir.exists() && gitDir.isDirectory()) {
+            return gitDir;
+        } else {
+            File parent = directory.getParentFile();
+            return parent != null ? findGitDir(parent) : null;
+        }
+    }
+
+
     public Object getValueAt(int row, int column) {
         File file = files[row];
 
@@ -995,19 +1006,36 @@ class FileTableModel extends AbstractTableModel {
                 return file.lastModified();
             case 5:
                 try {
-                    // Get the repository
-                    Repository repository = new FileRepositoryBuilder().setWorkTree(file.getAbsoluteFile()).findGitDir().build();
-                    Git git = new Git(repository);
-                    Status status = git.status().call();
-                    Set<String> stagedFiles = new HashSet<>();
-                    stagedFiles.addAll(status.getAdded());
-
-                    // Analyze the status and return the result
-                    if (stagedFiles.contains(file.getName())) {
-                        return "Added";
-                    } else {
-                        return "Unknown";
+                    File gitDir = findGitDir(file.getAbsoluteFile());
+                    if (gitDir == null) {
+                        return "none";
+                    } else if (gitDir != null && file.isDirectory() ) {
+                        return "gitDir";
                     }
+
+                    String path = file.getParent();
+                    String name = file.getName();
+
+                    String cmd = "cd " + path + " && " + "git status -s " + name;
+                    Process p;
+
+                    String[] command = {"/bin/sh", "-c", cmd};
+                    p = Runtime.getRuntime().exec(command);
+
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+                    // 출력 결과를 저장할 문자열 버퍼 생성
+                    StringBuilder output = new StringBuilder();
+
+                    // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append("\n");
+                    }
+                    String status = output.toString().substring(0, 2);
+
+                    return status;
+
                 } catch (Exception e) {
                     e.printStackTrace();
                     return "Error";
