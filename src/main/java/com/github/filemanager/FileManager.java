@@ -228,7 +228,7 @@ public class FileManager {
             tree.setVisibleRowCount(15);
 
             Dimension preferredSize = treeScroll.getPreferredSize();
-            Dimension widePreferred = new Dimension(300, (int) preferredSize.getHeight());
+            Dimension widePreferred = new Dimension(200, (int) preferredSize.getHeight());
             treeScroll.setPreferredSize(widePreferred);
 
             // details for a File
@@ -383,6 +383,16 @@ public class FileManager {
 
             toolBar.addSeparator();
 
+            init = new JButton("init");
+            //init.setMnemonic('');
+            init.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            init();
+                        }
+                    });
+            toolBar.add(init);
+
             /* delete checkBoxes: readable, writable, executable */
 
             /* author: Jung seungwon
@@ -399,16 +409,6 @@ public class FileManager {
                     }
             );
             toolBar.add(commitButton);
-
-            init = new JButton("init");
-            //init.setMnemonic('');
-            init.addActionListener(
-                    new ActionListener() {
-                        public void actionPerformed(ActionEvent ae) {
-                            init();
-                        }
-                    });
-            toolBar.add(init);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
