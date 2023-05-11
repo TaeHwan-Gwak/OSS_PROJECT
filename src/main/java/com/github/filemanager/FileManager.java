@@ -1153,6 +1153,11 @@ class FileTableModel extends AbstractTableModel {
                     while ((line = reader.readLine()) != null) {
                         output.append(line).append("\n");
                     }
+
+                    if(line == null) {
+                        return "C"; // committed;
+                    }
+
                     String status = output.toString().substring(0, 2);
 
                     return status;
