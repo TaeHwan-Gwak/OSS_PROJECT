@@ -374,7 +374,7 @@ public class FileManager {
 
             /* delete checkBoxes: readable, writable, executable */
 
-            /* author: Jung seungwon
+            /*
             * when commitButton is clicked, we can see the staged file lists
             * and the textBox that we can write the commit message.
             * */
@@ -785,11 +785,6 @@ public class FileManager {
     }
 
 
-    /* author: Jung seungwon(frankwon11)
-     *  ActionEvent that open the commit dialog when commitButton is clicked.
-     * */
-
-
     /**
      * findGitDir do finding the .git dir from currentFile variance.
      * if There is .git return .git's file.
@@ -994,7 +989,6 @@ private void commitButton() {
             f.setTitle(APP_TITLE + " :: " + fileSystemView.getSystemDisplayName(file));
         }
 
-        updateCommitButton();
         gui.repaint();
     }
 
@@ -1107,6 +1101,11 @@ class FileTableModel extends AbstractTableModel {
                     while ((line = reader.readLine()) != null) {
                         output.append(line).append("\n");
                     }
+
+                    if(line == null) {
+                        return "C"; // committed;
+                    }
+
                     String status = output.toString().substring(0, 2);
 
                     return status;
