@@ -783,8 +783,8 @@ public class FileManager {
 
 
     /* author: Jung seungwon(frankwon11)
-    *  ActionEvent that open the commit dialog when commitButton is clicked.
-    * */
+     *  ActionEvent that open the commit dialog when commitButton is clicked.
+     * */
 
     private void commitButton() {
         if (currentFile == null) {
@@ -795,7 +795,7 @@ public class FileManager {
         if (commitPanel == null) {
             commitPanel = new JPanel(new BorderLayout(3, 3));
 
-            try{
+            try {
 //                Repository repository = new FileRepositoryBuilder().readEnvironment().findGitDir().build();
                 Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
                 Git git = new Git(repository);
@@ -843,7 +843,7 @@ public class FileManager {
                     }
                 }
 
-            }catch (Exception ae){
+            } catch (Exception ae) {
                 showErrorMessage("No location selected for commit.", "Select Location");
                 return;
             }
@@ -968,7 +968,7 @@ class FileTableModel extends AbstractTableModel {
     private File[] files;
     private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
     private String[] columns = {
-            "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
+            "Icon", "File", "Path/name", "Size", "Last Modified", "status",
     };
 
     FileTableModel() {
@@ -979,8 +979,20 @@ class FileTableModel extends AbstractTableModel {
         this.files = files;
     }
 
+    private File findGitDir(File directory) {
+        File gitDir = new File(directory, ".git");
+        if (gitDir.exists() && gitDir.isDirectory()) {
+            return gitDir;
+        } else {
+            File parent = directory.getParentFile();
+            return parent != null ? findGitDir(parent) : null;
+        }
+    }
+
+
     public Object getValueAt(int row, int column) {
         File file = files[row];
+
         switch (column) {
             case 0:
                 return fileSystemView.getSystemIcon(file);
@@ -993,15 +1005,41 @@ class FileTableModel extends AbstractTableModel {
             case 4:
                 return file.lastModified();
             case 5:
-                return file.canRead();
-            case 6:
-                return file.canWrite();
-            case 7:
-                return file.canExecute();
-            case 8:
-                return file.isDirectory();
-            case 9:
-                return file.isFile();
+                try {
+                    File gitDir = findGitDir(file.getAbsoluteFile());
+                    if (gitDir == null) {
+                        return "none";
+                    } else if (gitDir != null && file.isDirectory() ) {
+                        return "gitDir";
+                    }
+
+                    String path = file.getParent();
+                    String name = file.getName();
+
+                    String cmd = "cd " + path + " && " + "git status -s " + name;
+                    Process p;
+
+                    String[] command = {"/bin/sh", "-c", cmd};
+                    p = Runtime.getRuntime().exec(command);
+
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+                    // 출력 결과를 저장할 문자열 버퍼 생성
+                    StringBuilder output = new StringBuilder();
+
+                    // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append("\n");
+                    }
+                    String status = output.toString().substring(0, 2);
+
+                    return status;
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return "Error";
+                }
             default:
                 System.err.println("Logic Error");
         }
@@ -1021,11 +1059,7 @@ class FileTableModel extends AbstractTableModel {
             case 4:
                 return Date.class;
             case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 9:
-                return Boolean.class;
+                return String.class;
         }
         return String.class;
     }
