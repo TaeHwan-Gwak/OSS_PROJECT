@@ -134,6 +134,7 @@ public class FileManager {
     private JButton gitAdd;
     private JButton gitRestore;
     private JButton gitRm;
+    private JButton gitMv;
 
     private JLabel fileName;
     private JTextField path;
@@ -144,6 +145,11 @@ public class FileManager {
     private JCheckBox executable;
     private JRadioButton isDirectory;
     private JRadioButton isFile;
+    private JButton init;
+
+    /* author Jung Seungwon */
+    private JButton commitButton;
+    private JPanel commitPanel;
 
     /* author Jung Seungwon */
     private JButton commitButton;
@@ -369,18 +375,35 @@ public class FileManager {
                     });
             toolBar.add(gitRm);
 
+            gitMv = new JButton("mv");
+            gitMv.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            gitMv();
+                        }
+                    });
+            toolBar.add(gitMv);
+
 
             toolBar.addSeparator();
 
+            init = new JButton("init");
+            //init.setMnemonic('');
+            init.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            init();
+                        }
+                    });
+            toolBar.add(init);
+
             /* delete checkBoxes: readable, writable, executable */
 
-            /*
+            /* author: Jung seungwon
              * when commitButton is clicked, we can see the staged file lists
              * and the textBox that we can write the commit message.
              * */
-
-            commitButton = new JButton("commit");
-
+            commitButton = new JButton("Commit");
             commitButton.addActionListener(
                     new ActionListener() {
                         @Override
@@ -389,9 +412,7 @@ public class FileManager {
                         }
                     }
             );
-
             toolBar.add(commitButton);
-
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -592,6 +613,8 @@ public class FileManager {
         gui.repaint();
     }
 
+
+
     private void gitAdd() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git add.", "Select File");
@@ -723,6 +746,92 @@ public class FileManager {
         gui.repaint();
     }
 
+    private void gitMv() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git mv.", "Select File");
+            return;
+        }
+
+        String moveTo =
+                JOptionPane.showInputDialog(gui,
+                        "Text new file name or new path you want to git mv this file.");
+//        받은 moveTo가 올바른 파일명 혹은 디렉토리인지 확인 필요
+        if(moveTo != null) {
+            try {
+                // git이 관리하는지 확인하는 if문으로 감싸고, else문에 error msg 출력
+
+                boolean directory = currentFile.isDirectory();
+                TreePath parentPath = findTreePath(currentFile.getParentFile());
+                DefaultMutableTreeNode parentNode =
+                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
+
+                String file = currentFile.getName();
+                String path = currentFile.getParent();
+                Process p;
+                String cmd = "cd " + path + " && git mv " + file + " " + moveTo;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+
+
+
+                //파일 띄워야돼....
+//                File[] files = fileSystemView.getFiles(currentFile.getParentFile(), true);
+//                setTableData(files);
+//
+//                fileTableModel.setFiles(files);
+
+//                fileTableModel.fireTableDataChanged();
+
+                // 디렉토리일 경우 노드 관련 추가 작업
+//                if(directory){
+//
+//                    TreePath currentPath = findTreePath(currentFile);
+//                    DefaultMutableTreeNode currentNode =
+//                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+//                    treeModel.removeNodeFromParent(currentNode);
+//
+//                    String newPath = path + File.separator + moveTo;
+//                    currentFile = new File(newPath);
+
+//                    currentPath = findTreePath(currentFile);
+//                    currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+//                    currentNode.setUserObject(currentFile.getName());
+//                    treeModel.insertNodeInto(currentNode, parentNode, parentNode.getChildCount());
+//                }
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+
+        gui.repaint();
+    }
+
+    private void init() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git init.", "Select File");
+            return;
+        }
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui,
+                        "Are you sure you want to git init this file?",
+                        "Delete File",
+                        JOptionPane.ERROR_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                //디렉토리 아닐 시 에러
+                Process p;
+                String cmd = "cd " + currentFile.getPath() + " && git init";
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+        gui.repaint();
+    }
+
     private void showErrorMessage(String errorMessage, String errorTitle) {
         JOptionPane.showMessageDialog(gui, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
     }
@@ -805,7 +914,6 @@ public class FileManager {
             return;
         }
 
-        // to separate ui and model to reopen the commit button.
         JPanel commitPanel = createCommitPanel();
 
         int result =
@@ -828,16 +936,16 @@ public class FileManager {
                     return;
                 }
 
+
                 File gitDir = findGitDir(currentFile.getAbsoluteFile());
                 if (gitDir == null) {
                     // Handle the case where there is no .git directory found
                     showErrorMessage("This directory doesn't use git","No Git Directory");
                 }
-
-                // get the repository to git command.
                 Repository repository =
                         new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
 
+//            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
                 Git git = new Git(repository);
                 git.commit().setMessage(commitMsg).call();
                 git.close();
@@ -852,34 +960,30 @@ public class FileManager {
     }
 
     private JPanel createCommitPanel() {
-        // main Panel on commit button.
+
         JPanel commitPanel = new JPanel(new BorderLayout(3, 3));
 
         try {
-            // find .git from currentFile.
             File gitDir = findGitDir(currentFile.getAbsoluteFile());
             if (gitDir == null) {
                 // Handle the case where there is no .git directory found
                 showErrorMessage("This directory doesn't use git","No Git Directory");
             }
-
-            // get the repository to use git command.
             Repository repository =
                     new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+//            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
             Git git = new Git(repository);
             Status status = git.status().call();
-
-            // get the staged files.
             Set<String> stagedFiles = new HashSet<>();
             stagedFiles.addAll(status.getAdded());
             stagedFiles.addAll(status.getChanged());
             stagedFiles.addAll(status.getRemoved());
-//            // if you want to check filePath and worktree do this things.
-//            System.out.println("CurrentFile: " + currentFile.getAbsoluteFile().getAbsolutePath());
-//            System.out.println("Repository directory: " + repository.getDirectory());
-//            System.out.println("Work tree: " + repository.getWorkTree());
+            System.out.println("CurrentFile: " + currentFile.getAbsoluteFile().getAbsolutePath());
+            System.out.println("Repository directory: " + repository.getDirectory());
+            System.out.println("Work tree: " + repository.getWorkTree());
 
-            // set the staged files table.
+
             DefaultTableModel tableModel = new DefaultTableModel(new String[]{"Staged Files"}, 0);
             for (String filePath : stagedFiles) {
                 tableModel.addRow(new Object[]{filePath});
@@ -887,13 +991,11 @@ public class FileManager {
             JTable stagedFilesTable = new JTable(tableModel);
             stagedFilesTable.setModel(tableModel);
 
-            // set the commit message panel.
             JPanel commitMessagePanel = new JPanel(new BorderLayout());
             JTextArea commitMessageArea = new JTextArea(5, 30);
             commitMessagePanel.add(new JLabel("Commit Message"), BorderLayout.NORTH);
             commitMessagePanel.add(commitMessageArea, BorderLayout.CENTER);
 
-            // set the main panel for commitButton.
             commitPanel.add(new JLabel("Staged Files:"), BorderLayout.NORTH);
             commitPanel.add(new JScrollPane(stagedFilesTable), BorderLayout.CENTER);
             commitPanel.add(commitMessagePanel, BorderLayout.SOUTH);
@@ -906,6 +1008,7 @@ public class FileManager {
 
         return commitPanel;
     }
+
 
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
@@ -952,22 +1055,9 @@ public class FileManager {
         worker.execute();
     }
 
-
-    private void updateCommitButton() {
-        if (currentFile == null) {
-            commitButton.setEnabled(false);
-            return;
-        }
-
-        File gitDir = findGitDir(currentFile.getAbsoluteFile());
-        if (gitDir == null) {
-            commitButton.setEnabled(false);
-        } else {
-            commitButton.setEnabled(true);
-        }
-    }
-
-    /** Update the File details view with the details of this File. */
+    /**
+     * Update the File details view with the details of this File.
+     */
     private void setFileDetails(File file) {
         currentFile = file;
         Icon icon = fileSystemView.getSystemIcon(file);
