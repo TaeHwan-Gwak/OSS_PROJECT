@@ -330,7 +330,9 @@ public class FileManager {
             * when commitButton is clicked, we can see the staged file lists
             * and the textBox that we can write the commit message.
             * */
+
             commitButton = new JButton("Commit");
+
             commitButton.addActionListener(
                     new ActionListener() {
                         @Override
@@ -339,6 +341,7 @@ public class FileManager {
                         }
                     }
             );
+
             toolBar.add(commitButton);
 
 
@@ -788,6 +791,7 @@ private void commitButton() {
         isDirectory.setSelected(file.isDirectory());
 
         isFile.setSelected(file.isFile());
+
 
         JFrame f = (JFrame) gui.getTopLevelAncestor();
         if (f != null) {
