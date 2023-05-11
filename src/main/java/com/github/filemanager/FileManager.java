@@ -782,75 +782,126 @@ public class FileManager {
     }
 
 
+
     /* author: Jung seungwon(frankwon11)
      *  ActionEvent that open the commit dialog when commitButton is clicked.
      * */
 
+
+    /**
+     * findGitDir do finding the .git dir from currentFile variance.
+     * if There is .git return .git's file.
+     * else return null
+     * */
+    private File findGitDir(File directory) {
+        File gitDir = new File(directory, ".git");
+        if (gitDir.exists() && gitDir.isDirectory()) {
+            return gitDir;
+        } else {
+            File parent = directory.getParentFile();
+            return parent != null ? findGitDir(parent) : null;
+        }
+    }
     private void commitButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for commit.", "Select Location");
             return;
         }
 
-        if (commitPanel == null) {
-            commitPanel = new JPanel(new BorderLayout(3, 3));
+        JPanel commitPanel = createCommitPanel();
 
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
             try {
-//                Repository repository = new FileRepositoryBuilder().readEnvironment().findGitDir().build();
-                Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
+                JTextArea commitMessageArea = (JTextArea) commitPanel.getClientProperty("commitMessageArea");
+                String commitMsg = commitMessageArea.getText();
+                if (commitMsg.trim().isEmpty()) {
+                    showErrorMessage("Commit message cannot be empty.", "Empty Commit Message");
+                    return;
+                }
+
+                JTable stagedFilesTable = (JTable) commitPanel.getClientProperty("stagedFilesTable");
+                if (stagedFilesTable.getRowCount() == 0) {
+                    showErrorMessage("There's nothing to commit.", "Empty Commit Objects");
+                    return;
+                }
+
+
+                File gitDir = findGitDir(currentFile.getAbsoluteFile());
+                if (gitDir == null) {
+                    // Handle the case where there is no .git directory found
+                    showErrorMessage("This directory doesn't use git","No Git Directory");
+                }
+                Repository repository =
+                        new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+//            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
                 Git git = new Git(repository);
-                Status status = git.status().call();
-                Set<String> stagedFiles = new HashSet<>();
-                stagedFiles.addAll(status.getAdded());
-//                stagedFiles.addAll(status.getChanged());
-//                stagedFiles.addAll(status.getRemoved());
+                git.commit().setMessage(commitMsg).call();
+                git.close();
 
-                DefaultTableModel tableModel = new DefaultTableModel(new String[]{"Staged Files"}, 0);
-                for (String filePath : stagedFiles) {
-                    tableModel.addRow(new Object[]{filePath});
-                }
-                JTable stagedFilesTable = new JTable(tableModel);
-                stagedFilesTable.setModel(tableModel);
-
-
-                JPanel commitMessagePanel = new JPanel(new BorderLayout());
-                JTextArea commitMessageArea = new JTextArea(5, 50);
-                commitMessagePanel.add(new JLabel(currentFile.getAbsolutePath()), BorderLayout.NORTH);
-                commitMessagePanel.add(commitMessageArea, BorderLayout.CENTER);
-
-
-                commitPanel.add(new JLabel("Staged Files:"), BorderLayout.NORTH);
-                commitPanel.add(new JScrollPane(stagedFilesTable), BorderLayout.CENTER);
-                commitPanel.add(commitMessagePanel, BorderLayout.SOUTH);
-
-                int result =
-                        JOptionPane.showConfirmDialog(
-                                gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
-                if (result == JOptionPane.OK_OPTION) {
-                    try {
-                        String commitMsg = commitMessageArea.getText();
-                        if (commitMsg.trim().isEmpty()) {
-                            showErrorMessage("Commit message cannot be empty.", "Empty Commit Message");
-                            return;
-                        }
-
-                        git.commit().setMessage(commitMsg).call();
-                        git.close();
-
-//                        showInfoMessage("Commit Successful");
-                    } catch (Throwable t) {
-                        showThrowable(t);
-                    }
-                }
-
-            } catch (Exception ae) {
-                showErrorMessage("No location selected for commit.", "Select Location");
-                return;
+                JOptionPane.showMessageDialog(gui, "Successfully Committed", "Commit Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException | GitAPIException e) {
+                showErrorMessage("An error occurred during the commit process.", "Commit Error");
             }
         }
 
         gui.repaint();
     }
+
+    private JPanel createCommitPanel() {
+
+        JPanel commitPanel = new JPanel(new BorderLayout(3, 3));
+
+        try {
+            File gitDir = findGitDir(currentFile.getAbsoluteFile());
+            if (gitDir == null) {
+                // Handle the case where there is no .git directory found
+                showErrorMessage("This directory doesn't use git","No Git Directory");
+            }
+            Repository repository =
+                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+//            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
+            Git git = new Git(repository);
+            Status status = git.status().call();
+            Set<String> stagedFiles = new HashSet<>();
+            stagedFiles.addAll(status.getAdded());
+            stagedFiles.addAll(status.getChanged());
+            stagedFiles.addAll(status.getRemoved());
+            System.out.println("CurrentFile: " + currentFile.getAbsoluteFile().getAbsolutePath());
+            System.out.println("Repository directory: " + repository.getDirectory());
+            System.out.println("Work tree: " + repository.getWorkTree());
+
+
+            DefaultTableModel tableModel = new DefaultTableModel(new String[]{"Staged Files"}, 0);
+            for (String filePath : stagedFiles) {
+                tableModel.addRow(new Object[]{filePath});
+            }
+            JTable stagedFilesTable = new JTable(tableModel);
+            stagedFilesTable.setModel(tableModel);
+
+            JPanel commitMessagePanel = new JPanel(new BorderLayout());
+            JTextArea commitMessageArea = new JTextArea(5, 30);
+            commitMessagePanel.add(new JLabel("Commit Message"), BorderLayout.NORTH);
+            commitMessagePanel.add(commitMessageArea, BorderLayout.CENTER);
+
+            commitPanel.add(new JLabel("Staged Files:"), BorderLayout.NORTH);
+            commitPanel.add(new JScrollPane(stagedFilesTable), BorderLayout.CENTER);
+            commitPanel.add(commitMessagePanel, BorderLayout.SOUTH);
+
+            commitPanel.putClientProperty("commitMessageArea", commitMessageArea);
+            commitPanel.putClientProperty("stagedFilesTable", stagedFilesTable);
+        } catch (IOException | GitAPIException ee) {
+            showErrorMessage("An error occurred while trying to load staged files.", "Staged Files Error");
+        }
+
+        return commitPanel;
+    }
+
 
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
