@@ -617,12 +617,25 @@ public class FileManager {
             return;
         }
 
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            // Handle the case where there is no .git directory found
+            showErrorMessage("This directory doesn't use git","No Git Directory");
+            return;
+        }
+
+        if (currentFile.isDirectory()) {
+            showErrorMessage("Directory cannot be added","D can't add");
+            return;
+        }
+
         int result =
                 JOptionPane.showConfirmDialog(
                         gui,
                         "Are you sure you want to git add this file?",
                         "Git Add File",
                         JOptionPane.ERROR_MESSAGE);
+
 
         if (result == JOptionPane.OK_OPTION) {
             try {
@@ -645,6 +658,18 @@ public class FileManager {
     private void gitRestore() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git restore.", "Select File");
+            return;
+        }
+
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            // Handle the case where there is no .git directory found
+            showErrorMessage("This directory doesn't use git","No Git Directory");
+            return;
+        }
+
+        if (currentFile.isDirectory()) {
+            showErrorMessage("Directory cannot be restored","D can't restore");
             return;
         }
 
@@ -695,6 +720,18 @@ public class FileManager {
     private void gitRm() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git rm.", "Select File");
+            return;
+        }
+
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            // Handle the case where there is no .git directory found
+            showErrorMessage("This directory doesn't use git","No Git Directory");
+            return;
+        }
+
+        if (currentFile.isDirectory()) {
+            showErrorMessage("Directory cannot be rm","D can't rm");
             return;
         }
 
@@ -805,6 +842,18 @@ public class FileManager {
     private void init() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git init.", "Select File");
+            return;
+        }
+
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir != null) {
+            // Handle the case where there is no .git directory found
+            showErrorMessage("This directory already use git","Already Git Directory");
+            return;
+        }
+
+        if (currentFile.isFile()) {
+            showErrorMessage("File cannot be init","F can't restore");
             return;
         }
 
