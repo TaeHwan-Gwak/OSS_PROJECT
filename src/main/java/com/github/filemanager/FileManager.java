@@ -78,7 +78,7 @@ import org.apache.commons.io.FileUtils;
 public class FileManager {
 
     /** Title of the application */
-    public static final String APP_TITLE = "FileMan";
+    public static final String APP_TITLE = "FileManager";
     /** Used to open/edit/print files. */
     private Desktop desktop;
     /** Provides nice icons and names for files. */
