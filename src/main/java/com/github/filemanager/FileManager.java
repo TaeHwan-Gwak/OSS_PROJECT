@@ -540,6 +540,7 @@ public class FileManager {
         if(moveTo != null) {
             try {
                 // git이 관리하는지 확인하는 if문으로 감싸고, else문에 error msg 출력
+
                 boolean directory = currentFile.isDirectory();
                 TreePath parentPath = findTreePath(currentFile.getParentFile());
                 DefaultMutableTreeNode parentNode =
@@ -547,23 +548,35 @@ public class FileManager {
 
                 String file = currentFile.getName();
                 String path = currentFile.getParent();
+                Process p;
+                String cmd = "cd " + path + " && git mv " + file + " " + moveTo;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
 
-                // 깃무브
-                    Process p;
-                    String mvCmd = "git mv ";
-                    String cmd = "cd " + path + " && " + mvCmd + file + " " + moveTo;
-                    String[] command = {"/bin/sh", "-c", cmd};
-                    p = Runtime.getRuntime().exec(command);
+                //파일 띄워야돼....
+//                File[] files = fileSystemView.getFiles(currentFile.getParentFile(), true);
+//                setTableData(files);
+//
+//                fileTableModel.setFiles(files);
 
-                // 디렉토리일 경우 추가 작업( git mv [디렉] [이동할 디렉] )
-                if(directory){
+//                fileTableModel.fireTableDataChanged();
+
+                // 디렉토리일 경우 노드 관련 추가 작업
+//                if(directory){
+//
 //                    TreePath currentPath = findTreePath(currentFile);
-//                    System.out.println(currentPath);
 //                    DefaultMutableTreeNode currentNode =
 //                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-//
 //                    treeModel.removeNodeFromParent(currentNode);
-                }
+//
+//                    String newPath = path + File.separator + moveTo;
+//                    currentFile = new File(newPath);
+
+//                    currentPath = findTreePath(currentFile);
+//                    currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+//                    currentNode.setUserObject(currentFile.getName());
+//                    treeModel.insertNodeInto(currentNode, parentNode, parentNode.getChildCount());
+//                }
                 showChildren(parentNode);
             } catch (Throwable t) {
                 showThrowable(t);
