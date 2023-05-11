@@ -111,6 +111,8 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
+    private JButton mv;
+    private JButton init;
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
@@ -315,7 +317,27 @@ public class FileManager {
 
             toolBar.addSeparator();
 
+            toolBar.add(new JLabel("git "));
 
+            mv = new JButton("mv");
+            //mv.setMnemonic('');
+            mv.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            mv();
+                        }
+                    });
+            toolBar.add(mv);
+
+            init = new JButton("init");
+            //init.setMnemonic('');
+            init.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            init();
+                        }
+                    });
+            toolBar.add(init);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -386,7 +408,7 @@ public class FileManager {
 
                         treeModel.removeNodeFromParent(currentNode);
 
-                        // add a new node..
+                        // add a new node..`
                     }
 
                     showChildren(parentNode);
@@ -509,6 +531,90 @@ public class FileManager {
                     String msg = "The file '" + file + "' could not be created.";
                     showErrorMessage(msg, "Create Failed");
                 }
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+        gui.repaint();
+    }
+
+    private void mv() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git mv.", "Select File");
+            return;
+        }
+
+        String moveTo =
+                JOptionPane.showInputDialog(gui,
+                        "Text new file name or new path you want to git mv this file.");
+//        받은 moveTo가 올바른 파일명 혹은 디렉토리인지 확인 필요
+        if(moveTo != null) {
+            try {
+                // git이 관리하는지 확인하는 if문으로 감싸고, else문에 error msg 출력
+
+                boolean directory = currentFile.isDirectory();
+                TreePath parentPath = findTreePath(currentFile.getParentFile());
+                DefaultMutableTreeNode parentNode =
+                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
+
+                String file = currentFile.getName();
+                String path = currentFile.getParent();
+                Process p;
+                String cmd = "cd " + path + " && git mv " + file + " " + moveTo;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+
+                //파일 띄워야돼....
+//                File[] files = fileSystemView.getFiles(currentFile.getParentFile(), true);
+//                setTableData(files);
+//
+//                fileTableModel.setFiles(files);
+
+//                fileTableModel.fireTableDataChanged();
+
+                // 디렉토리일 경우 노드 관련 추가 작업
+//                if(directory){
+//
+//                    TreePath currentPath = findTreePath(currentFile);
+//                    DefaultMutableTreeNode currentNode =
+//                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+//                    treeModel.removeNodeFromParent(currentNode);
+//
+//                    String newPath = path + File.separator + moveTo;
+//                    currentFile = new File(newPath);
+
+//                    currentPath = findTreePath(currentFile);
+//                    currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+//                    currentNode.setUserObject(currentFile.getName());
+//                    treeModel.insertNodeInto(currentNode, parentNode, parentNode.getChildCount());
+//                }
+                showChildren(parentNode);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+        gui.repaint();
+    }
+
+    private void init() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git init.", "Select File");
+            return;
+        }
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui,
+                        "Are you sure you want to git init this file?",
+                        "Delete File",
+                        JOptionPane.ERROR_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                //디렉토리 아닐 시 에러
+                Process p;
+                String cmd = "cd " + currentFile.getPath() + " && git init";
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
             } catch (Throwable t) {
                 showThrowable(t);
             }
@@ -687,7 +793,7 @@ class FileTableModel extends AbstractTableModel {
     private File[] files;
     private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
     private String[] columns = {
-        "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
+            "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
     };
 
     FileTableModel() {
