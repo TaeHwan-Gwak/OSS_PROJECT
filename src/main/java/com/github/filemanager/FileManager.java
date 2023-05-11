@@ -112,6 +112,7 @@ public class FileManager {
     private JButton deleteFile;
     private JButton newFile;
     private JButton mv;
+    private JButton init;
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
@@ -327,6 +328,16 @@ public class FileManager {
                         }
                     });
             toolBar.add(mv);
+
+            init = new JButton("init");
+            //init.setMnemonic('');
+            init.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            init();
+                        }
+                    });
+            toolBar.add(init);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -585,6 +596,32 @@ public class FileManager {
         gui.repaint();
     }
 
+    private void init() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git init.", "Select File");
+            return;
+        }
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui,
+                        "Are you sure you want to git init this file?",
+                        "Delete File",
+                        JOptionPane.ERROR_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                //디렉토리 아닐 시 에러
+                Process p;
+                String cmd = "cd " + currentFile.getPath() + " && git init";
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+        gui.repaint();
+    }
+
     private void showErrorMessage(String errorMessage, String errorTitle) {
         JOptionPane.showMessageDialog(gui, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
     }
@@ -756,7 +793,7 @@ class FileTableModel extends AbstractTableModel {
     private File[] files;
     private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
     private String[] columns = {
-        "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
+            "Icon", "File", "Path/name", "Size", "Last Modified", "R", "W", "E", "D", "F",
     };
 
     FileTableModel() {
