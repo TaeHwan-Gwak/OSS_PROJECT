@@ -804,6 +804,18 @@ public class FileManager {
             return;
         }
 
+        // file can't use git init command.
+        if (!currentFile.isDirectory()){
+            showErrorMessage("The file can't use git. choose the Directory.","File Can't Use Git");
+            return;
+        }
+
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir != null) {
+            showErrorMessage("This directory already use git.","Already Use Git Directory");
+            return; // Exit the method without creating the init panel
+        }
+
         int result =
                 JOptionPane.showConfirmDialog(
                         gui,
