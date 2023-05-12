@@ -644,6 +644,13 @@ public class FileManager {
             return;
         }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating the restore Panel.
+        }
+
         Object[] options = {"Cancel", "restore --staged", "restore"};
 
         int result = JOptionPane.showOptionDialog(
@@ -692,6 +699,48 @@ public class FileManager {
         if (currentFile == null) {
             showErrorMessage("No file selected for git rm.", "Select File");
             return;
+        }
+
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating the rm Panel.
+        }
+
+        try {
+
+            String path = currentFile.getParent();
+            String name = currentFile.getName();
+
+            String cmd = "cd " + path + " && " + "git status -s " + name;
+            Process p;
+
+            String[] command = {"/bin/sh", "-c", cmd};
+            p = Runtime.getRuntime().exec(command);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            // 출력 결과를 저장할 문자열 버퍼 생성
+            StringBuilder output = new StringBuilder();
+
+            // 현재 파일의 status
+            String status;
+
+            // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+            String line;
+            if ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+
+                status = output.toString().substring(0, 2);
+                if(status.equals("??")) {
+                    showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                    return;
+                }
+            }
+
+        } catch (Throwable t) {
+            showThrowable(t);
         }
 
         Object[] options = {"Cancel", "rm -cached", "rm"};
@@ -1177,7 +1226,7 @@ class FileTableModel extends AbstractTableModel {
                     File gitDir = findGitDir(file.getAbsoluteFile());
                     if (gitDir == null) {
                         return "none";
-                    } else if (gitDir != null && file.isDirectory() ) {
+                    } else if (gitDir != null && file.isDirectory()) {
                         return "gitDir";
                     }
 
@@ -1197,16 +1246,13 @@ class FileTableModel extends AbstractTableModel {
 
                     // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
                     String line;
-                    while ((line = reader.readLine()) != null) {
+                    if ((line = reader.readLine()) != null) {
                         output.append(line).append("\n");
-                    }
-
-                    if(line == null) {
-                        return "C"; // committed;
+                    } else {
+                        return "C";
                     }
 
                     String status = output.toString().substring(0, 2);
-
                     return status;
 
                 } catch (Exception e) {
