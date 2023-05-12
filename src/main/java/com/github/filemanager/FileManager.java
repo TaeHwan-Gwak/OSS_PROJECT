@@ -131,10 +131,10 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
-    private JButton add;
-    private JButton restore;
-    private JButton rm;
-    private JButton mv;
+    private JButton addButton;
+    private JButton restoreButton;
+    private JButton rmButton;
+    private JButton mvButton;
 
     private JLabel fileName;
     private JTextField path;
@@ -145,7 +145,7 @@ public class FileManager {
     private JCheckBox executable;
     private JRadioButton isDirectory;
     private JRadioButton isFile;
-    private JButton init;
+    private JButton initButton;
 
     private JButton commitButton;
     private JPanel commitPanel;
@@ -345,54 +345,54 @@ public class FileManager {
 
             toolBar.add(new JLabel("git "));
 
-            add = new JButton("add");
-            add.addActionListener(
+            addButton = new JButton("add");
+            addButton.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            add();
+                            addButton();
                         }
                     });
-            toolBar.add(add);
+            toolBar.add(addButton);
 
-            restore = new JButton("restore");
-            restore.addActionListener(
+            restoreButton = new JButton("restore");
+            restoreButton.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            restore();
+                            restoreButton();
                         }
                     });
-            toolBar.add(restore);
+            toolBar.add(restoreButton);
 
-            rm = new JButton("rm");
-            rm.addActionListener(
+            rmButton = new JButton("rm");
+            rmButton.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            rm();
+                            rmButton();
                         }
                     });
-            toolBar.add(rm);
+            toolBar.add(rmButton);
 
-            mv = new JButton("mv");
-            mv.addActionListener(
+            mvButton = new JButton("mv");
+            mvButton.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            mv();
+                            mvButton();
                         }
                     });
-            toolBar.add(mv);
+            toolBar.add(mvButton);
 
 
             toolBar.addSeparator();
 
-            init = new JButton("init");
-            //init.setMnemonic('');
-            init.addActionListener(
+            initButton = new JButton("init");
+            //initButton.setMnemonic('');
+            initButton.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            init();
+                            initButton();
                         }
                     });
-            toolBar.add(init);
+            toolBar.add(initButton);
 
 
             commitButton = new JButton("commit");
@@ -607,7 +607,7 @@ public class FileManager {
 
 
 
-    private void add() {
+    private void addButton() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git add.", "Select File");
             return;
@@ -638,7 +638,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void restore() {
+    private void restoreButton() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git restore.", "Select File");
             return;
@@ -688,7 +688,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void rm() {
+    private void rmButton() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git rm.", "Select File");
             return;
@@ -738,7 +738,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void mv() {
+    private void mvButton() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git mv.", "Select File");
             return;
@@ -798,7 +798,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void init() {
+    private void initButton() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git init.", "Select File");
             return;
