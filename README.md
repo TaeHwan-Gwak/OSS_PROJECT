@@ -27,8 +27,9 @@ A simple Java/Swing native file manager capable of performing Git repository man
 
 ## 개발 환경
 + Java 
-+ java 20.0.1
++ openJDK version 20.0.1
 + IDE : IntelliJ IDEA
++ MAC OS
 
 ***
 
