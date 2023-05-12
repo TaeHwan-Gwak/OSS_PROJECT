@@ -619,6 +619,45 @@ public class FileManager {
             showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating the add Panel.
         }
+        try {
+
+            String path = currentFile.getParent();
+            String name = currentFile.getName();
+
+            String cmd = "cd " + path + " && " + "git status -s " + name;
+            Process p;
+
+            String[] command = {"/bin/sh", "-c", cmd};
+            p = Runtime.getRuntime().exec(command);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            // 출력 결과를 저장할 문자열 버퍼 생성
+            StringBuilder output = new StringBuilder();
+
+            // 현재 파일의 status
+            String status;
+
+            // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+            String line;
+            if ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+
+                status = output.toString().substring(0, 2);
+                //modified or already staged
+                if(status.startsWith("M") || status.equals("A ")) {
+                    showErrorMessage("This file is already at the staging area.","Staged File");
+                    return;
+                }
+            }
+            else{
+                showErrorMessage("This file is already commited","Commited File");
+                return;
+            }
+
+        } catch (Throwable t) {
+            showThrowable(t);
+        }
 
         int result =
                 JOptionPane.showConfirmDialog(
@@ -676,8 +715,8 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitReCommand = "git restore ";
-                String cmd = "cd " + path + " && " + gitReCommand + file;
+                String gitRmCommand = "git restore ";
+                String cmd = "cd " + path + " && " + gitRmCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
@@ -689,8 +728,8 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitReCommand = "git restore --staged ";
-                String cmd = "cd " + path + " && " + gitReCommand + file;
+                String gitRmCommand = "git restore --staged ";
+                String cmd = "cd " + path + " && " + gitRmCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
@@ -768,8 +807,8 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitReCommand = "git rm ";
-                String cmd = "cd " + path + " && " + gitReCommand + file;
+                String gitRmCommand = "git rm ";
+                String cmd = "cd " + path + " && " + gitRmCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
@@ -781,8 +820,8 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitReCommand = "git rm --cached ";
-                String cmd = "cd " + path + " && " + gitReCommand + file;
+                String gitRmCommand = "git rm --cached ";
+                String cmd = "cd " + path + " && " + gitRmCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
@@ -800,19 +839,64 @@ public class FileManager {
             return;
         }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating the mv Panel.
+        }
+
+        try {
+            String path = currentFile.getParent();
+            String name = currentFile.getName();
+
+            String cmd = "cd " + path + " && " + "git status -s " + name;
+            Process p;
+
+            String[] command = {"/bin/sh", "-c", cmd};
+            p = Runtime.getRuntime().exec(command);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            // 출력 결과를 저장할 문자열 버퍼 생성
+            StringBuilder output = new StringBuilder();
+
+            // 현재 파일의 status
+            String status;
+
+            // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+            String line;
+            if ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+
+                status = output.toString().substring(0, 2);
+                if(status.equals("??")) {
+                    showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                    return;
+                }
+            }
+
+        } catch (Throwable t) {
+            showThrowable(t);
+        }
+
         String moveTo =
                 JOptionPane.showInputDialog(gui,
                         "Text new file name or new path you want to git mv this file.");
-//        받은 moveTo가 올바른 파일명 혹은 디렉토리인지 확인 필요
+
+        //moveTo가 이동할 path일 경우, 경로에 git이 관리하지 않는 directory가 있을 시 error
+        if(moveTo.contains("/")){
+            File newFile = new File(moveTo);
+            gitDir = findGitDir(newFile.getAbsoluteFile());
+            if (gitDir == null) {
+                showErrorMessage("This path has directory that git does not manage.","No Git Directory");
+                return; // Exit the method without creating the mv Panel.
+            }
+        }
+
         if(moveTo != null) {
             try {
-                // git이 관리하는지 확인하는 if문으로 감싸고, else문에 error msg 출력
-
-                boolean directory = currentFile.isDirectory();
-                TreePath parentPath = findTreePath(currentFile.getParentFile());
-                DefaultMutableTreeNode parentNode =
-                        (DefaultMutableTreeNode) parentPath.getLastPathComponent();
-
+                
                 String file = currentFile.getName();
                 String path = currentFile.getParent();
                 Process p;
@@ -820,31 +904,6 @@ public class FileManager {
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
 
-                //파일 띄워야돼....
-//                File[] files = fileSystemView.getFiles(currentFile.getParentFile(), true);
-//                setTableData(files);
-//
-//                fileTableModel.setFiles(files);
-
-//                fileTableModel.fireTableDataChanged();
-
-                // 디렉토리일 경우 노드 관련 추가 작업
-//                if(directory){
-//
-//                    TreePath currentPath = findTreePath(currentFile);
-//                    DefaultMutableTreeNode currentNode =
-//                            (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-//                    treeModel.removeNodeFromParent(currentNode);
-//
-//                    String newPath = path + File.separator + moveTo;
-//                    currentFile = new File(newPath);
-
-//                    currentPath = findTreePath(currentFile);
-//                    currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-//                    currentNode.setUserObject(currentFile.getName());
-//                    treeModel.insertNodeInto(currentNode, parentNode, parentNode.getChildCount());
-//                }
-//                showChildren(parentNode);
             } catch (Throwable t) {
                 showThrowable(t);
             }
