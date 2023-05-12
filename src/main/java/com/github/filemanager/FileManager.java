@@ -937,12 +937,13 @@ public class FileManager {
                 JOptionPane.showInputDialog(gui,
                         "Text new file name or new path you want to git mv this file.");
 
-        //moveTo가 이동할 path일 경우, 경로에 git이 관리하지 않는 directory가 있을 시 error
+        //moveTo가 이동할 path이고, repository 밖의 경로일 경우 error
         if(moveTo.contains("/")){
+            gitDir = findGitDir(currentFile.getAbsoluteFile());
             File newFile = new File(moveTo);
-            gitDir = findGitDir(newFile.getAbsoluteFile());
-            if (gitDir == null) {
-                showErrorMessage("This path has directory that git does not manage.","No Git Directory");
+            File newGitDir = findGitDir(newFile.getAbsoluteFile());
+            if (!gitDir.equals(newGitDir)) {
+                showErrorMessage("This path is outside repository.","Outside Repository");
                 return; // Exit the method without creating the mv Panel.
             }
         }
