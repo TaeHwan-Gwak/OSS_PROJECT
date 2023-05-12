@@ -84,7 +84,7 @@ public class FileManager {
     /**
      * Title of the application
      */
-    public static final String APP_TITLE = "FileMan";
+    public static final String APP_TITLE = "FileManager";
     /**
      * Used to open/edit/print files.
      */
@@ -131,10 +131,10 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
-    private JButton gitAdd;
-    private JButton gitRestore;
-    private JButton gitRm;
-    private JButton gitMv;
+    private JButton add;
+    private JButton restore;
+    private JButton rm;
+    private JButton mv;
 
     private JLabel fileName;
     private JTextField path;
@@ -147,7 +147,6 @@ public class FileManager {
     private JRadioButton isFile;
     private JButton init;
 
-    /* author Jung Seungwon */
     private JButton commitButton;
     private JPanel commitPanel;
 
@@ -344,41 +343,43 @@ public class FileManager {
 
             toolBar.addSeparator();
 
-            gitAdd = new JButton("add");
-            gitAdd.addActionListener(
-                    new ActionListener() {
-                        public void actionPerformed(ActionEvent ae) {
-                            gitAdd();
-                        }
-                    });
-            toolBar.add(gitAdd);
+            toolBar.add(new JLabel("git "));
 
-            gitRestore = new JButton("restore");
-            gitRestore.addActionListener(
+            add = new JButton("add");
+            add.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitRestore();
+                            add();
                         }
                     });
-            toolBar.add(gitRestore);
+            toolBar.add(add);
 
-            gitRm = new JButton("rm");
-            gitRm.addActionListener(
+            restore = new JButton("restore");
+            restore.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitRm();
+                            restore();
                         }
                     });
-            toolBar.add(gitRm);
+            toolBar.add(restore);
 
-            gitMv = new JButton("mv");
-            gitMv.addActionListener(
+            rm = new JButton("rm");
+            rm.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
-                            gitMv();
+                            rm();
                         }
                     });
-            toolBar.add(gitMv);
+            toolBar.add(rm);
+
+            mv = new JButton("mv");
+            mv.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            mv();
+                        }
+                    });
+            toolBar.add(mv);
 
 
             toolBar.addSeparator();
@@ -393,13 +394,8 @@ public class FileManager {
                     });
             toolBar.add(init);
 
-            /* delete checkBoxes: readable, writable, executable */
 
-            /* author: Jung seungwon
-             * when commitButton is clicked, we can see the staged file lists
-             * and the textBox that we can write the commit message.
-             * */
-            commitButton = new JButton("Commit");
+            commitButton = new JButton("commit");
             commitButton.addActionListener(
                     new ActionListener() {
                         @Override
@@ -610,7 +606,8 @@ public class FileManager {
     }
 
 
-    private void gitAdd() {
+
+    private void add() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git add.", "Select File");
             return;
@@ -641,8 +638,8 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitAddCommand = "git add ";
-                String cmd = "cd " + path + " && " + gitAddCommand + file;
+                String addCommand = "git add ";
+                String cmd = "cd " + path + " && " + addCommand + file;
                 Process p;
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
@@ -654,7 +651,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void gitRestore() {
+    private void restore() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git restore.", "Select File");
             return;
@@ -716,7 +713,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void gitRm() {
+    private void rm() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git rm.", "Select File");
             return;
@@ -778,7 +775,7 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void gitMv() {
+    private void mv() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git mv.", "Select File");
             return;
@@ -937,12 +934,6 @@ public class FileManager {
     }
 
 
-
-    /* author: Jung seungwon(frankwon11)
-     *  ActionEvent that open the commit dialog when commitButton is clicked.
-     * */
-
-
     /**
      * findGitDir do finding the .git dir from currentFile variance.
      * if There is .git return .git's file.
@@ -963,13 +954,21 @@ public class FileManager {
             showErrorMessage("No location selected for commit.", "Select Location");
             return;
         }
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            // Handle the case where there is no .git directory found
+            showErrorMessage("This directory doesn't use git","No Git Directory");
+            return; // Exit the method without creating the commit panel
+        }
 
+        // to separate ui and model to reopen the commit button.
         JPanel commitPanel = createCommitPanel();
 
         int result =
                 JOptionPane.showConfirmDialog(
                         gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
 
+        // if user clicked ok. do commit.
         if (result == JOptionPane.OK_OPTION) {
             try {
                 JTextArea commitMessageArea = (JTextArea) commitPanel.getClientProperty("commitMessageArea");
@@ -985,16 +984,10 @@ public class FileManager {
                     return;
                 }
 
-
-                File gitDir = findGitDir(currentFile.getAbsoluteFile());
-                if (gitDir == null) {
-                    // Handle the case where there is no .git directory found
-                    showErrorMessage("This directory doesn't use git", "No Git Directory");
-                }
+                // get the repository to git command.
                 Repository repository =
                         new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
 
-//            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
                 Git git = new Git(repository);
                 git.commit().setMessage(commitMsg).call();
                 git.close();
@@ -1009,30 +1002,30 @@ public class FileManager {
     }
 
     private JPanel createCommitPanel() {
-
+        // main Panel on commit button.
         JPanel commitPanel = new JPanel(new BorderLayout(3, 3));
 
         try {
+            // find .git from currentFile.
             File gitDir = findGitDir(currentFile.getAbsoluteFile());
             if (gitDir == null) {
                 // Handle the case where there is no .git directory found
                 showErrorMessage("This directory doesn't use git", "No Git Directory");
             }
+
+            // get the repository to use git command.
             Repository repository =
                     new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
-
-//            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).findGitDir().build();
             Git git = new Git(repository);
             Status status = git.status().call();
+
+            // get the staged files.
             Set<String> stagedFiles = new HashSet<>();
             stagedFiles.addAll(status.getAdded());
             stagedFiles.addAll(status.getChanged());
             stagedFiles.addAll(status.getRemoved());
-            System.out.println("CurrentFile: " + currentFile.getAbsoluteFile().getAbsolutePath());
-            System.out.println("Repository directory: " + repository.getDirectory());
-            System.out.println("Work tree: " + repository.getWorkTree());
 
-
+            // set the staged files table.
             DefaultTableModel tableModel = new DefaultTableModel(new String[]{"Staged Files"}, 0);
             for (String filePath : stagedFiles) {
                 tableModel.addRow(new Object[]{filePath});
@@ -1040,11 +1033,13 @@ public class FileManager {
             JTable stagedFilesTable = new JTable(tableModel);
             stagedFilesTable.setModel(tableModel);
 
+            // set the commit message panel.
             JPanel commitMessagePanel = new JPanel(new BorderLayout());
             JTextArea commitMessageArea = new JTextArea(5, 30);
             commitMessagePanel.add(new JLabel("Commit Message"), BorderLayout.NORTH);
             commitMessagePanel.add(commitMessageArea, BorderLayout.CENTER);
 
+            // set the main panel for commitButton.
             commitPanel.add(new JLabel("Staged Files:"), BorderLayout.NORTH);
             commitPanel.add(new JScrollPane(stagedFilesTable), BorderLayout.CENTER);
             commitPanel.add(commitMessagePanel, BorderLayout.SOUTH);
@@ -1057,7 +1052,6 @@ public class FileManager {
 
         return commitPanel;
     }
-
 
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
@@ -1121,6 +1115,7 @@ public class FileManager {
         isDirectory.setSelected(file.isDirectory());
 
         isFile.setSelected(file.isFile());
+
 
         JFrame f = (JFrame) gui.getTopLevelAncestor();
         if (f != null) {
