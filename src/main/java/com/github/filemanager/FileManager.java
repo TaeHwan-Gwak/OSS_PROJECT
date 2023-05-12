@@ -676,11 +676,39 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitReCommand = "git restore ";
-                String cmd = "cd " + path + " && " + gitReCommand + file;
-                Process p;
-                String[] command = {"/bin/sh", "-c", cmd};
-                p = Runtime.getRuntime().exec(command);
+                String checkCmd = "cd " + path + " && " + "git status -s " + file;
+                Process check_p;
+                String[] c_command = {"/bin/sh", "-c", checkCmd};
+                check_p = Runtime.getRuntime().exec(c_command);
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(check_p.getInputStream()));
+
+                // 출력 결과를 저장할 문자열 버퍼 생성
+                StringBuilder output = new StringBuilder();
+
+                // 현재 파일의 status
+                String status;
+
+                // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+                String line;
+                if ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+
+                    status = output.toString().substring(0, 2);
+                    if(status.equals("??")) {
+                        showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                        return;
+                    } else if(status.equals("A ")) {
+                        showErrorMessage("If you want restore, click restore --staged","Added File ?");
+                        return;
+                    }
+
+                    String gitReCommand = "git restore ";
+                    String cmd = "cd " + path + " && " + gitReCommand + file;
+                    Process p;
+                    String[] command = {"/bin/sh", "-c", cmd};
+                    p = Runtime.getRuntime().exec(command);
+                }
             } catch (Throwable t) {
                 showThrowable(t);
             }
@@ -689,11 +717,36 @@ public class FileManager {
                 String file = currentFile.getName();
                 String path = currentFile.getPath().replace(file, "");
 
-                String gitReCommand = "git restore --staged ";
-                String cmd = "cd " + path + " && " + gitReCommand + file;
-                Process p;
-                String[] command = {"/bin/sh", "-c", cmd};
-                p = Runtime.getRuntime().exec(command);
+                String checkCmd = "cd " + path + " && " + "git status -s " + file;
+                Process check_p;
+                String[] c_command = {"/bin/sh", "-c", checkCmd};
+                check_p = Runtime.getRuntime().exec(c_command);
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(check_p.getInputStream()));
+
+                // 출력 결과를 저장할 문자열 버퍼 생성
+                StringBuilder output = new StringBuilder();
+
+                // 현재 파일의 status
+                String status;
+
+                // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
+                String line;
+                if ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+
+                    status = output.toString().substring(0, 2);
+                    if(status.equals("??")) {
+                        showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                        return;
+                    }
+
+                    String gitReCommand = "git restore --staged ";
+                    String cmd = "cd " + path + " && " + gitReCommand + file;
+                    Process p;
+                    String[] command = {"/bin/sh", "-c", cmd};
+                    p = Runtime.getRuntime().exec(command);
+                }
             } catch (Throwable t) {
                 showThrowable(t);
             }
