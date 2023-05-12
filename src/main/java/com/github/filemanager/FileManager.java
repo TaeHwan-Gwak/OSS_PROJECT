@@ -906,9 +906,11 @@ public class FileManager {
             showErrorMessage("No location selected for commit.", "Select Location");
             return;
         }
+
+
+        // Handle the case where there is no .git directory found
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            // Handle the case where there is no .git directory found
             showErrorMessage("This directory doesn't use git","No Git Directory");
             return; // Exit the method without creating the commit panel
         }
