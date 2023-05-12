@@ -613,6 +613,13 @@ public class FileManager {
             return;
         }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating the add Panel.
+        }
+
         int result =
                 JOptionPane.showConfirmDialog(
                         gui,
