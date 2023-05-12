@@ -764,8 +764,6 @@ public class FileManager {
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
 
-
-
                 //파일 띄워야돼....
 //                File[] files = fileSystemView.getFiles(currentFile.getParentFile(), true);
 //                setTableData(files);
@@ -790,6 +788,7 @@ public class FileManager {
 //                    currentNode.setUserObject(currentFile.getName());
 //                    treeModel.insertNodeInto(currentNode, parentNode, parentNode.getChildCount());
 //                }
+//                showChildren(parentNode);
             } catch (Throwable t) {
                 showThrowable(t);
             }
