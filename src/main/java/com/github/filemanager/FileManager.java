@@ -619,45 +619,6 @@ public class FileManager {
             showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating the add Panel.
         }
-        try {
-
-            String path = currentFile.getParent();
-            String name = currentFile.getName();
-
-            String cmd = "cd " + path + " && " + "git status -s " + name;
-            Process p;
-
-            String[] command = {"/bin/sh", "-c", cmd};
-            p = Runtime.getRuntime().exec(command);
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-            // 출력 결과를 저장할 문자열 버퍼 생성
-            StringBuilder output = new StringBuilder();
-
-            // 현재 파일의 status
-            String status;
-
-            // 한 줄씩 출력 결과를 읽어와 버퍼에 추가
-            String line;
-            if ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-
-                status = output.toString().substring(0, 2);
-                //modified or already staged
-                if(status.startsWith("M") || status.equals("A ")) {
-                    showErrorMessage("This file is already at the staging area.","Staged File");
-                    return;
-                }
-            }
-            else{
-                showErrorMessage("This file is already commited","Commited File");
-                return;
-            }
-
-        } catch (Throwable t) {
-            showThrowable(t);
-        }
 
         int result =
                 JOptionPane.showConfirmDialog(
