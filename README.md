@@ -59,7 +59,7 @@ pom.xml에 다음 코드 추가 후 설치
  <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
-      <version>6.5.0.202303070854-r</version>
+      <version>5.9.0.202009080501-r</version>
  </dependency>
  ```
 
