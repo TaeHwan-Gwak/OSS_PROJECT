@@ -988,7 +988,7 @@ public class FileManager {
                 JOptionPane.showConfirmDialog(
                         gui,
                         "Are you sure you want to git init this file?",
-                        "Delete File",
+                        "Git Init File",
                         JOptionPane.ERROR_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             try {
