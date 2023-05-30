@@ -411,14 +411,18 @@ public class FileManager {
             );
             toolBar.add(commitButton);
 
-
             // git branch Buttons
             toolBar.addSeparator();
 
             toolBar.add(new JLabel("branch "));
 
             branchCreateButton = new JButton("create");
-
+            branchCreateButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) { branchCreateButton(); }
+                    }
+            );
             toolBar.add(branchCreateButton);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
@@ -1162,7 +1166,135 @@ public class FileManager {
 
         return commitPanel;
     }
+    private void branchCreateButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for branch creation.", "Select Location");
+            return;
+        }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating branchCreatePanel.
+        }
+
+        // to separate ui and model to reopen the branch create button.
+        JPanel branchCreatePanel = createBranchCreatePanel();
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui, branchCreatePanel, "Create Branch", JOptionPane.OK_CANCEL_OPTION);
+
+        // if user clicked ok. do branch creation.
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                JTextField branchNameField = (JTextField) branchCreatePanel.getClientProperty("branchNameField");
+                String branchName = branchNameField.getText();
+                if (branchName.trim().isEmpty()) {
+                    showErrorMessage("Branch name cannot be empty.", "Empty Branch Name");
+                    return;
+                }
+
+                // get the repository to git command.
+                Repository repository =
+                        new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+                Git git = new Git(repository);
+                git.branchCreate().setName(branchName).call();
+                git.close();
+
+                JOptionPane.showMessageDialog(gui, "Successfully Created Branch", "Branch Creation Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException | GitAPIException e) {
+                showErrorMessage("An error occurred during the branch creation process.", "Branch Creation Error");
+            }
+        }
+
+        gui.repaint();
+    }
+//    private void branchCreateButton(){
+//        if (currentFile == null) {
+//            showErrorMessage("No location selected for creating branch.", "Select Location");
+//            return;
+//        }
+//
+//       // if the directory doesn't use git, can't use git command.
+//        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+//        if (gitDir == null) {
+//            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+//            return; // Exit the method without creating branchCreatePanel.
+//        }
+//        // to separate ui and model to reopen the commit button.
+//        JPanel branchCreatePanel = createBranchCreatePanel();
+//
+//        int result =
+//                JOptionPane.showConfirmDialog(
+//                        gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
+//
+//        if(result == JOptionPane.OK_OPTION){
+//            try {
+//                String file = currentFile.getName();
+//                String path = currentFile.getParent();
+//                Process p;
+//                String cmd = "cd " + path + " && git branch " + branchName;
+//                String[] command = {"/bin/sh", "-c", cmd};
+//                p = Runtime.getRuntime().exec(command);
+//
+//                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+//
+//                String line = reader.readLine();
+//                if(line != null){
+//                    showErrorMessage(line, "Same Branch Name");
+//                }
+//
+//
+//
+//            } catch (Throwable t) {
+//                showThrowable(t);
+//            }
+//
+//        }
+////        String branchName =
+////                JOptionPane.showInputDialog(gui,
+////                        "Text a new branch name.");
+////
+////        if(branchName != null) {
+////            try {
+////                String file = currentFile.getName();
+////                String path = currentFile.getParent();
+////                Process p;
+////                String cmd = "cd " + path + " && git branch " + branchName;
+////                String[] command = {"/bin/sh", "-c", cmd};
+////                p = Runtime.getRuntime().exec(command);
+////
+////                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+////
+////                String line = reader.readLine();
+////                if(line != null){
+////                    showErrorMessage(line, "Same Branch Name");
+////                }
+////
+////
+////
+////            } catch (Throwable t) {
+////                showThrowable(t);
+////            }
+////        }
+//
+//        gui.repaint();
+//    }
+
+    private JPanel createBranchCreatePanel() {
+        JPanel branchCreatePanel = new JPanel(new BorderLayout(3, 3));
+
+        JTextField branchNameField = new JTextField(30);
+        branchCreatePanel.add(new JLabel("Branch Name"), BorderLayout.NORTH);
+        branchCreatePanel.add(branchNameField, BorderLayout.CENTER);
+
+        branchCreatePanel.putClientProperty("branchNameField", branchNameField);
+
+        return branchCreatePanel;
+    }
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
      * Of Eels.
