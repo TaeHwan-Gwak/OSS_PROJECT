@@ -162,6 +162,7 @@ public class FileManager {
     private JPanel newFilePanel;
     private JRadioButton newTypeFile;
     private JTextField name;
+    private JTextField currentBranch;
 
     public Container getGui() {
         if (gui == null) {
@@ -261,17 +262,11 @@ public class FileManager {
             fileDetailsLabels.add(new JLabel("File size", JLabel.TRAILING));
             size = new JLabel();
             fileDetailsValues.add(size);
-            fileDetailsLabels.add(new JLabel("Type", JLabel.TRAILING));
-
-            JPanel flags = new JPanel(new FlowLayout(FlowLayout.LEADING, 4, 0));
-            isDirectory = new JRadioButton("Directory");
-            isDirectory.setEnabled(false);
-            flags.add(isDirectory);
-
-            isFile = new JRadioButton("File");
-            isFile.setEnabled(false);
-            flags.add(isFile);
-            fileDetailsValues.add(flags);
+            //current branch
+            fileDetailsLabels.add(new JLabel("Current Branch",JLabel.TRAILING));
+            currentBranch = new JTextField(5);
+            currentBranch.setEditable(false);
+            fileDetailsValues.add(currentBranch);
 
             int count = fileDetailsLabels.getComponentCount();
             for (int ii = 0; ii < count; ii++) {
@@ -481,6 +476,19 @@ public class FileManager {
         }
         // not found!
         return null;
+    }
+    private String getCurrentBranch(File currentFile){
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            return "";
+        }
+        try{
+            Repository repository = Git.open(new File(gitDir.getPath())).getRepository();
+            String branch = repository.getBranch();
+            return branch;
+        } catch(IOException e) {
+            return "";
+        }
     }
 
     private void renameFile() {
@@ -947,7 +955,7 @@ public class FileManager {
 
         if(moveTo != null) {
             try {
-                
+
                 String file = currentFile.getName();
                 String path = currentFile.getParent();
                 Process p;
@@ -1068,7 +1076,7 @@ public class FileManager {
      * if There is .git return .git's file.
      * else return null
      * */
-    private File findGitDir(File directory) {
+    private static File findGitDir(File directory) {
         File gitDir = new File(directory, ".git");
         if (gitDir.exists() && gitDir.isDirectory()) {
             return gitDir;
@@ -1368,13 +1376,7 @@ public class FileManager {
         path.setText(file.getPath());
         date.setText(new Date(file.lastModified()).toString());
         size.setText(file.length() + " bytes");
-        readable.setSelected(file.canRead());
-        writable.setSelected(file.canWrite());
-        executable.setSelected(file.canExecute());
-        isDirectory.setSelected(file.isDirectory());
-
-        isFile.setSelected(file.isFile());
-
+        currentBranch.setText(getCurrentBranch(file));
 
         JFrame f = (JFrame) gui.getTopLevelAncestor();
         if (f != null) {
