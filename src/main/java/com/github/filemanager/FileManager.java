@@ -131,12 +131,19 @@ public class FileManager {
     private JButton editFile;
     private JButton deleteFile;
     private JButton newFile;
+
+    // git Buttons
+    private JButton initButton;
     private JButton addButton;
     private JButton restoreButton;
     private JButton rmButton;
     private JButton mvButton;
+    private JButton commitButton;
 
+    // git Branch Buttons
     private JButton branchCreateButton;
+    private JButton branchDeleteButton;
+
 
     private JLabel fileName;
     private JTextField path;
@@ -147,10 +154,7 @@ public class FileManager {
     private JCheckBox executable;
     private JRadioButton isDirectory;
     private JRadioButton isFile;
-    private JButton initButton;
 
-    private JButton commitButton;
-    private JPanel commitPanel;
 
     /* GUI options/containers for new File/Directory creation.  Created lazily. */
     private JPanel newFilePanel;
@@ -424,6 +428,17 @@ public class FileManager {
                     }
             );
             toolBar.add(branchCreateButton);
+
+            JButton branchDeleteButton = new JButton("delete");
+            branchDeleteButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent ae) {
+                            branchDeleteButton();
+                        }
+                    }
+            );
+            toolBar.add(branchDeleteButton);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -1212,77 +1227,6 @@ public class FileManager {
 
         gui.repaint();
     }
-//    private void branchCreateButton(){
-//        if (currentFile == null) {
-//            showErrorMessage("No location selected for creating branch.", "Select Location");
-//            return;
-//        }
-//
-//       // if the directory doesn't use git, can't use git command.
-//        File gitDir = findGitDir(currentFile.getAbsoluteFile());
-//        if (gitDir == null) {
-//            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
-//            return; // Exit the method without creating branchCreatePanel.
-//        }
-//        // to separate ui and model to reopen the commit button.
-//        JPanel branchCreatePanel = createBranchCreatePanel();
-//
-//        int result =
-//                JOptionPane.showConfirmDialog(
-//                        gui, commitPanel, "Commit Changes", JOptionPane.OK_CANCEL_OPTION);
-//
-//        if(result == JOptionPane.OK_OPTION){
-//            try {
-//                String file = currentFile.getName();
-//                String path = currentFile.getParent();
-//                Process p;
-//                String cmd = "cd " + path + " && git branch " + branchName;
-//                String[] command = {"/bin/sh", "-c", cmd};
-//                p = Runtime.getRuntime().exec(command);
-//
-//                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-//
-//                String line = reader.readLine();
-//                if(line != null){
-//                    showErrorMessage(line, "Same Branch Name");
-//                }
-//
-//
-//
-//            } catch (Throwable t) {
-//                showThrowable(t);
-//            }
-//
-//        }
-////        String branchName =
-////                JOptionPane.showInputDialog(gui,
-////                        "Text a new branch name.");
-////
-////        if(branchName != null) {
-////            try {
-////                String file = currentFile.getName();
-////                String path = currentFile.getParent();
-////                Process p;
-////                String cmd = "cd " + path + " && git branch " + branchName;
-////                String[] command = {"/bin/sh", "-c", cmd};
-////                p = Runtime.getRuntime().exec(command);
-////
-////                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-////
-////                String line = reader.readLine();
-////                if(line != null){
-////                    showErrorMessage(line, "Same Branch Name");
-////                }
-////
-////
-////
-////            } catch (Throwable t) {
-////                showThrowable(t);
-////            }
-////        }
-//
-//        gui.repaint();
-//    }
 
     private JPanel createBranchCreatePanel() {
         JPanel branchCreatePanel = new JPanel(new BorderLayout(3, 3));
@@ -1295,6 +1239,11 @@ public class FileManager {
 
         return branchCreatePanel;
     }
+
+    private void branchDeleteButton(){
+
+    }
+
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
      * Of Eels.
