@@ -136,6 +136,8 @@ public class FileManager {
     private JButton rmButton;
     private JButton mvButton;
 
+    private JButton branchCreateButton;
+
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
@@ -343,7 +345,22 @@ public class FileManager {
 
             toolBar.addSeparator();
 
+            // git Buttons
             toolBar.add(new JLabel("git "));
+
+            initButton = new JButton("init");
+            //initButton.setMnemonic('');
+            initButton.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            initButton();
+                        }
+                    });
+            toolBar.add(initButton);
+
+            // cloneButton soon
+
+            toolBar.addSeparator();
 
             addButton = new JButton("add");
             addButton.addActionListener(
@@ -381,19 +398,7 @@ public class FileManager {
                     });
             toolBar.add(mvButton);
 
-
             toolBar.addSeparator();
-
-            initButton = new JButton("init");
-            //initButton.setMnemonic('');
-            initButton.addActionListener(
-                    new ActionListener() {
-                        public void actionPerformed(ActionEvent ae) {
-                            initButton();
-                        }
-                    });
-            toolBar.add(initButton);
-
 
             commitButton = new JButton("commit");
             commitButton.addActionListener(
@@ -405,6 +410,16 @@ public class FileManager {
                     }
             );
             toolBar.add(commitButton);
+
+
+            // git branch Buttons
+            toolBar.addSeparator();
+
+            toolBar.add(new JLabel("branch "));
+
+            branchCreateButton = new JButton("create");
+
+            toolBar.add(branchCreateButton);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
