@@ -37,6 +37,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -49,6 +50,7 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
@@ -1211,7 +1213,7 @@ public class FileManager {
                     return;
                 }
 
-                // get the repository to git command.
+                // get the repository to use git command.
                 Repository repository =
                         new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
 
@@ -1231,6 +1233,7 @@ public class FileManager {
     private JPanel createBranchCreatePanel() {
         JPanel branchCreatePanel = new JPanel(new BorderLayout(3, 3));
 
+        // to get the new branch name
         JTextField branchNameField = new JTextField(30);
         branchCreatePanel.add(new JLabel("Branch Name"), BorderLayout.NORTH);
         branchCreatePanel.add(branchNameField, BorderLayout.CENTER);
@@ -1241,9 +1244,74 @@ public class FileManager {
     }
 
     private void branchDeleteButton(){
+        if (currentFile == null) {
+            showErrorMessage("No location selected for branch deletion.", "Select Location");
+            return;
+        }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating branchDeletePanel.
+        }
+
+        try {
+            // get the repository to use git command.
+            Repository repository =
+                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+            Git git = new Git(repository);
+
+            JPanel branchDeletePanel = createBranchDeletePanel(git);
+
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, branchDeletePanel, "Delete Branch", JOptionPane.OK_CANCEL_OPTION);
+
+            // if user clicked ok. do branch deletion.
+            if (result == JOptionPane.OK_OPTION) {
+                JList<String> branchList = (JList<String>) branchDeletePanel.getClientProperty("branchList");
+                String branchName = branchList.getSelectedValue();
+
+                if (branchName == null || branchName.trim().isEmpty()) {
+                    showErrorMessage("No branch selected.", "No Branch Selected");
+                    return;
+                }
+
+                git.branchDelete().setBranchNames(branchName).call();
+                git.close();
+
+                JOptionPane.showMessageDialog(gui, "Successfully Deleted Branch", "Branch Deletion Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            gui.repaint();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during the branch deletion process.", "Branch Deletion Error");
+        }
     }
 
+    private JPanel createBranchDeletePanel(Git git) {
+        JPanel branchDeletePanel = new JPanel(new BorderLayout(3, 3));
+
+        try {
+            List<String> branches = git.branchList().call().stream().map(Ref::getName).collect(Collectors.toList());
+
+            DefaultListModel<String> branchListModel = new DefaultListModel<>();
+            for (String branch : branches) {
+                branchListModel.addElement(branch);
+            }
+            JList<String> branchList = new JList<>(branchListModel);
+
+            branchDeletePanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchDeletePanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
+            branchDeletePanel.putClientProperty("branchList", branchList);
+        } catch (GitAPIException e) {
+            showErrorMessage("Failed to load branches.", "Branch Load Error");
+        }
+
+        return branchDeletePanel;
+    }
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
      * Of Eels.
