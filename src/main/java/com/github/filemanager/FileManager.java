@@ -439,7 +439,7 @@ public class FileManager {
         // not found!
         return null;
     }
-    private String currentBranch(File currentFile){
+    private String getCurrentBranch(File currentFile){
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
             return "";
@@ -917,7 +917,7 @@ public class FileManager {
 
         if(moveTo != null) {
             try {
-                
+
                 String file = currentFile.getName();
                 String path = currentFile.getParent();
                 Process p;
@@ -1210,12 +1210,7 @@ public class FileManager {
         path.setText(file.getPath());
         date.setText(new Date(file.lastModified()).toString());
         size.setText(file.length() + " bytes");
-        currentBranch.setText(currentBranch(file));
-        readable.setSelected(file.canRead());
-        writable.setSelected(file.canWrite());
-        executable.setSelected(file.canExecute());
-        isDirectory.setSelected(file.isDirectory());
-        isFile.setSelected(file.isFile());
+        currentBranch.setText(getCurrentBranch(file));
 
         JFrame f = (JFrame) gui.getTopLevelAncestor();
         if (f != null) {
