@@ -443,7 +443,7 @@ public class FileManager {
                     new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-//                            branchCheckoutButton();
+                            branchCheckoutButton();
                         }
                     }
             );
@@ -1334,55 +1334,79 @@ public class FileManager {
         return branchDeletePanel;
     }
 
+
     // branch rename button soon
 
 
-//    private void branchCheckoutButton() {
-//        if (currentFile == null) {
-//            showErrorMessage("No location selected for checkout.", "Select Location");
-//            return;
-//        }
-//
-//        File gitDir = findGitDir(currentFile.getAbsoluteFile());
-//        if (gitDir == null) {
-//            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
-//            return;
-//        }
-//
-//        try {
-//            Repository repository =
-//                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
-//
-//            Git git = new Git(repository);
-//
-//            JPanel checkoutPanel = createCheckoutPanel(git);
-//
-//            int result =
-//                    JOptionPane.showConfirmDialog(
-//                            gui, checkoutPanel, "Checkout Branch", JOptionPane.OK_CANCEL_OPTION);
-//
-//            if (result == JOptionPane.OK_OPTION) {
-//                JList<String> branchList = (JList<String>) checkoutPanel.getClientProperty("branchList");
-//                String branchName = branchList.getSelectedValue();
-//
-//                if (branchName == null || branchName.trim().isEmpty()) {
-//                    showErrorMessage("No branch selected.", "No Branch Selected");
-//                    return;
-//                }
-//
-//                git.checkout().setName(branchName).call();
-//                git.close();
-//
-//                JOptionPane.showMessageDialog(gui, "Successfully Checked Out Branch", "Checkout Success", JOptionPane.INFORMATION_MESSAGE);
-//            }
-//
-//            gui.repaint();
-//        } catch (IOException | GitAPIException e) {
-//            showErrorMessage("An error occurred during the checkout process.", "Checkout Error");
-//        }
-//    }
+    private void branchCheckoutButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for branch deletion.", "Select Location");
+            return;
+        }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating branchCheckoutPanel.
+        }
 
+        try {
+            // get the repository to use git command.
+            Repository repository =
+                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+            Git git = new Git(repository);
+
+            JPanel checkoutPanel = createBranchCheckoutPanel(git);
+
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, checkoutPanel, "Checkout Branch", JOptionPane.OK_CANCEL_OPTION);
+
+            // if user clicked ok. do branch deletion.
+            if (result == JOptionPane.OK_OPTION) {
+                JList<String> branchList = (JList<String>) checkoutPanel.getClientProperty("branchList");
+                String branchName = branchList.getSelectedValue();
+
+                if (branchName == null || branchName.trim().isEmpty()) {
+                    showErrorMessage("No branch selected.", "No Branch Selected");
+                    return;
+                }
+
+                git.checkout().setName(branchName).call();
+                git.close();
+
+                JOptionPane.showMessageDialog(gui, "Successfully Checked Out Branch", "Checkout Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            gui.repaint();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during the checkout process.", "Checkout Error");
+        }
+    }
+
+    private JPanel createBranchCheckoutPanel(Git git) {
+        JPanel branchCheckoutPanel = new JPanel(new BorderLayout(3, 3));
+
+        try {
+            List<String> branches = git.branchList().call().stream().map(Ref::getName).collect(Collectors.toList());
+
+            DefaultListModel<String> branchListModel = new DefaultListModel<>();
+            for (String branch : branches) {
+                branchListModel.addElement(branch);
+            }
+            JList<String> branchList = new JList<>(branchListModel);
+
+            branchCheckoutPanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchCheckoutPanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
+            branchCheckoutPanel.putClientProperty("branchList", branchList);
+        } catch (GitAPIException e) {
+            showErrorMessage("Failed to load branches.", "Branch Load Error");
+        }
+
+        return branchCheckoutPanel;
+    }
 
 
     /**
