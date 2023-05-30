@@ -145,6 +145,7 @@ public class FileManager {
     // git Branch Buttons
     private JButton branchCreateButton;
     private JButton branchDeleteButton;
+    private JButton branchCheckoutButton;
 
 
     private JLabel fileName;
@@ -426,7 +427,7 @@ public class FileManager {
             );
             toolBar.add(branchCreateButton);
 
-            JButton branchDeleteButton = new JButton("delete");
+            branchDeleteButton = new JButton("delete");
             branchDeleteButton.addActionListener(
                     new ActionListener() {
                         @Override
@@ -436,6 +437,18 @@ public class FileManager {
                     }
             );
             toolBar.add(branchDeleteButton);
+
+            branchCheckoutButton = new JButton("checkout");
+            branchCheckoutButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+//                            branchCheckoutButton();
+                        }
+                    }
+            );
+            toolBar.add(branchCheckoutButton);
+
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -1320,6 +1333,58 @@ public class FileManager {
 
         return branchDeletePanel;
     }
+
+    // branch rename button soon
+
+
+//    private void branchCheckoutButton() {
+//        if (currentFile == null) {
+//            showErrorMessage("No location selected for checkout.", "Select Location");
+//            return;
+//        }
+//
+//        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+//        if (gitDir == null) {
+//            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+//            return;
+//        }
+//
+//        try {
+//            Repository repository =
+//                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+//
+//            Git git = new Git(repository);
+//
+//            JPanel checkoutPanel = createCheckoutPanel(git);
+//
+//            int result =
+//                    JOptionPane.showConfirmDialog(
+//                            gui, checkoutPanel, "Checkout Branch", JOptionPane.OK_CANCEL_OPTION);
+//
+//            if (result == JOptionPane.OK_OPTION) {
+//                JList<String> branchList = (JList<String>) checkoutPanel.getClientProperty("branchList");
+//                String branchName = branchList.getSelectedValue();
+//
+//                if (branchName == null || branchName.trim().isEmpty()) {
+//                    showErrorMessage("No branch selected.", "No Branch Selected");
+//                    return;
+//                }
+//
+//                git.checkout().setName(branchName).call();
+//                git.close();
+//
+//                JOptionPane.showMessageDialog(gui, "Successfully Checked Out Branch", "Checkout Success", JOptionPane.INFORMATION_MESSAGE);
+//            }
+//
+//            gui.repaint();
+//        } catch (IOException | GitAPIException e) {
+//            showErrorMessage("An error occurred during the checkout process.", "Checkout Error");
+//        }
+//    }
+
+
+
+
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
      * Of Eels.
