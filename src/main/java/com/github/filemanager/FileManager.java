@@ -147,6 +147,9 @@ public class FileManager {
     private JButton branchDeleteButton;
     private JButton branchCheckoutButton;
 
+    // git Merge Buttons
+    private JButton mergeButton;
+
 
     private JLabel fileName;
     private JTextField path;
@@ -448,6 +451,23 @@ public class FileManager {
                     }
             );
             toolBar.add(branchCheckoutButton);
+
+            // git merge Buttons
+
+            toolBar.addSeparator();
+
+            toolBar.add(new JLabel("merge "));
+
+            mergeButton = new JButton("merge");
+            mergeButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            mergeButton();
+                        }
+                    }
+            );
+            toolBar.add(mergeButton);
 
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
@@ -1408,6 +1428,29 @@ public class FileManager {
         return branchCheckoutPanel;
     }
 
+    private void mergeButton(){
+        if (currentFile == null) {
+            showErrorMessage("No location selected for branch deletion.", "Select Location");
+            return;
+        }
+
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating branchDeletePanel.
+        }
+
+        /*
+        try {
+
+
+            gui.repaint();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during the branch deletion process.", "Branch Deletion Error");
+        }
+         */
+    }
 
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
