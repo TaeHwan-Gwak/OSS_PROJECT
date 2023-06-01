@@ -53,6 +53,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 /**
  * A basic File Manager. Requires 1.6+ for the Desktop &amp; SwingWorker classes, amongst other
@@ -734,16 +735,34 @@ public class FileManager {
 
                 String path = currentFile.getPath();
 
-                JRadioButton selectedVisibility = (JRadioButton) clonePanel.getClientProperty("selectedVisibility");
-                String visibility = selectedVisibility.getText();
-                // 선택되지 않았을 경우 처리
+                // get visibility of repository
+                ButtonGroup buttonGroup = (ButtonGroup) clonePanel.getClientProperty("buttonGroup");
+                ButtonModel selectedButton = (ButtonModel) buttonGroup.getSelection();
+                if(selectedButton == null){
+                    showErrorMessage("Please check visibility!", "No Visibility");
+                    return;
+                }
+                String visibility = selectedButton.getActionCommand();
 
-                if(visibility == "public"){
-                        Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).call();
+                // clone when the repository is private
+                if(visibility.equals("private")){
+                    // new panel to get userID and token
+                    JPanel insertIDPanel = createInsertIDPanel();
+                    int res = JOptionPane.showConfirmDialog(
+                            gui, insertIDPanel, "Insert GitHub User Information", JOptionPane.OK_CANCEL_OPTION);
+                    // how to store these informations?
+                    JTextField IDTextField = (JTextField) insertIDPanel.getClientProperty("ID");
+                    String ID = IDTextField.getText();
+
+                    JTextField tokenTextField = (JTextField) insertIDPanel.getClientProperty("token");
+                    String token = tokenTextField.getText();
+
+                    Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
                 }
 
+                // clone when the repository is public
                 else{
-                        //cloning when the repository is private.
+                    Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).call();
                 }
 
                 JOptionPane.showMessageDialog(gui, "Successfully Cloned", "Clone Success", JOptionPane.INFORMATION_MESSAGE);
@@ -759,14 +778,17 @@ public class FileManager {
         JPanel clonePanel = new JPanel(new BorderLayout(3, 3));
 
         // to get the address of repository
-        clonePanel.add(new JLabel("Respository Address"), BorderLayout.NORTH);
+        clonePanel.add(new JLabel("Repository Address"), BorderLayout.CENTER);
         JTextField repositoryAddressField = new JTextField(30);
-        clonePanel.add(repositoryAddressField, BorderLayout.CENTER);
+        clonePanel.add(repositoryAddressField, BorderLayout.SOUTH);
 
         clonePanel.putClientProperty("repositoryAddressField", repositoryAddressField);
 
+        // to get the visibility of repository
         JRadioButton privateRepository = new JRadioButton("Private");
+        privateRepository.setActionCommand("private");
         JRadioButton publicRepository = new JRadioButton("Public");
+        publicRepository.setActionCommand("public");
 
         ButtonGroup buttonGroup = new ButtonGroup();
         buttonGroup.add(privateRepository);
@@ -777,12 +799,35 @@ public class FileManager {
         visibilityPanel.add(privateRepository, BorderLayout.CENTER);
         visibilityPanel.add(publicRepository, BorderLayout.SOUTH);
 
-        clonePanel.add(visibilityPanel, BorderLayout.SOUTH);
+        clonePanel.add(visibilityPanel, BorderLayout.NORTH);
 
-        JRadioButton selectedButton = (JRadioButton) buttonGroup.getSelection();
-        clonePanel.putClientProperty("selctedVisibility",selectedButton);
+        clonePanel.putClientProperty("buttonGroup", buttonGroup);
 
         return clonePanel;
+    }
+
+    private JPanel createInsertIDPanel() {
+        JPanel insertIDPanel = new JPanel(new BorderLayout(3, 3));
+
+        // get ID from user
+        JPanel IDPanel = new JPanel(new BorderLayout(3, 3));
+        IDPanel.add(new JLabel("ID"), BorderLayout.WEST);
+        JTextField IDField = new JTextField(15);
+        IDPanel.add(IDField, BorderLayout.EAST);
+        insertIDPanel.add(IDPanel, BorderLayout.NORTH);
+
+        insertIDPanel.putClientProperty("ID", IDField);
+
+        // get token from user
+        JPanel tokenPanel = new JPanel(new BorderLayout(3, 3));
+        tokenPanel.add(new JLabel("token"), BorderLayout.WEST);
+        JTextField tokenField = new JTextField(15);
+        tokenPanel.add(tokenField, BorderLayout.EAST);
+        insertIDPanel.add(tokenPanel, BorderLayout.SOUTH);
+
+        insertIDPanel.putClientProperty("token", tokenField);
+
+        return insertIDPanel;
     }
 
     private void addButton() {
