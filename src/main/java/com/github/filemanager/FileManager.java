@@ -136,6 +136,7 @@ public class FileManager {
 
     // git Buttons
     private JButton initButton;
+    private JButton cloneButton;
     private JButton addButton;
     private JButton restoreButton;
     private JButton rmButton;
@@ -148,15 +149,11 @@ public class FileManager {
     private JButton branchCheckoutButton;
 
 
+
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
     private JLabel size;
-    private JCheckBox readable;
-    private JCheckBox writable;
-    private JCheckBox executable;
-    private JRadioButton isDirectory;
-    private JRadioButton isFile;
 
 
     /* GUI options/containers for new File/Directory creation.  Created lazily. */
@@ -351,7 +348,6 @@ public class FileManager {
             toolBar.add(new JLabel("git "));
 
             initButton = new JButton("init");
-            //initButton.setMnemonic('');
             initButton.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
@@ -360,7 +356,14 @@ public class FileManager {
                     });
             toolBar.add(initButton);
 
-            // cloneButton soon
+//            cloneButton = new JButton("clone");
+//            cloneButton.addActionListener(
+//                    new ActionListener() {
+//                        public void actionPerformed(ActionEvent ae) {
+//                            cloneButton();
+//                        }
+//                    });
+//            toolBar.add(cloneButton);
 
             toolBar.addSeparator();
 
@@ -662,7 +665,44 @@ public class FileManager {
         gui.repaint();
     }
 
+    // git Button methods.
+    private void initButton() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git init.", "Select File");
+            return;
+        }
 
+        // file can't use git init command.
+        if (!currentFile.isDirectory()){
+            showErrorMessage("The file can't use git. choose the Directory.","File Can't Use Git");
+            return;
+        }
+
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir != null) {
+            showErrorMessage("This directory already use git.","Already Use Git Directory");
+            return; // Exit the method without creating the init panel
+        }
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui,
+                        "Are you sure you want to git init this file?",
+                        "Git Init File",
+                        JOptionPane.ERROR_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                //디렉토리 아닐 시 에러
+                Process p;
+                String cmd = "cd " + currentFile.getPath() + " && git init";
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+        gui.repaint();
+    }
 
     private void addButton() {
         if (currentFile == null) {
@@ -955,7 +995,7 @@ public class FileManager {
                 JOptionPane.showInputDialog(gui,
                         "Text new file name or new path you want to git mv this file.");
 
-        //moveTo가 이동할 path이고, repository 밖의 경로일 경우 error
+        // moveTo가 이동할 path이고, repository 밖의 경로일 경우 error
         if(moveTo.contains("/")){
             gitDir = findGitDir(currentFile.getAbsoluteFile());
             File newFile = new File(moveTo);
@@ -982,121 +1022,6 @@ public class FileManager {
         }
 
         gui.repaint();
-    }
-
-    private void initButton() {
-        if (currentFile == null) {
-            showErrorMessage("No file selected for git init.", "Select File");
-            return;
-        }
-
-        // file can't use git init command.
-        if (!currentFile.isDirectory()){
-            showErrorMessage("The file can't use git. choose the Directory.","File Can't Use Git");
-            return;
-        }
-
-        File gitDir = findGitDir(currentFile.getAbsoluteFile());
-        if (gitDir != null) {
-            showErrorMessage("This directory already use git.","Already Use Git Directory");
-            return; // Exit the method without creating the init panel
-        }
-
-        int result =
-                JOptionPane.showConfirmDialog(
-                        gui,
-                        "Are you sure you want to git init this file?",
-                        "Git Init File",
-                        JOptionPane.ERROR_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
-            try {
-                //디렉토리 아닐 시 에러
-                Process p;
-                String cmd = "cd " + currentFile.getPath() + " && git init";
-                String[] command = {"/bin/sh", "-c", cmd};
-                p = Runtime.getRuntime().exec(command);
-            } catch (Throwable t) {
-                showThrowable(t);
-            }
-        }
-        gui.repaint();
-    }
-
-    private void showErrorMessage(String errorMessage, String errorTitle) {
-        JOptionPane.showMessageDialog(gui, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
-    }
-
-    private void showThrowable(Throwable t) {
-        t.printStackTrace();
-        JOptionPane.showMessageDialog(gui, t.toString(), t.getMessage(), JOptionPane.ERROR_MESSAGE);
-        gui.repaint();
-    }
-
-    /**
-     * Update the table on the EDT
-     */
-    private void setTableData(final File[] files) {
-        SwingUtilities.invokeLater(
-                new Runnable() {
-                    public void run() {
-                        if (fileTableModel == null) {
-                            fileTableModel = new FileTableModel();
-                            table.setModel(fileTableModel);
-                        }
-                        table.getSelectionModel()
-                                .removeListSelectionListener(listSelectionListener);
-                        fileTableModel.setFiles(files);
-                        table.getSelectionModel().addListSelectionListener(listSelectionListener);
-                        if (!cellSizesSet) {
-                            Icon icon = fileSystemView.getSystemIcon(files[0]);
-
-                            // size adjustment to better account for icons
-                            table.setRowHeight(icon.getIconHeight() + rowIconPadding);
-
-                            setColumnWidth(0, -1);
-                            setColumnWidth(3, 60);
-                            table.getColumnModel().getColumn(3).setMaxWidth(120);
-                            setColumnWidth(4, -1);
-                            setColumnWidth(5, -1);
-                            setColumnWidth(6, -1);
-                            setColumnWidth(7, -1);
-                            setColumnWidth(8, -1);
-                            setColumnWidth(9, -1);
-
-                            cellSizesSet = true;
-                        }
-                    }
-                });
-    }
-
-    private void setColumnWidth(int column, int width) {
-        TableColumn tableColumn = table.getColumnModel().getColumn(column);
-        if (width < 0) {
-            // use the preferred width of the header..
-            JLabel label = new JLabel((String) tableColumn.getHeaderValue());
-            Dimension preferred = label.getPreferredSize();
-            // altered 10->14 as per camickr comment.
-            width = (int) preferred.getWidth() + 14;
-        }
-        tableColumn.setPreferredWidth(width);
-        tableColumn.setMaxWidth(width);
-        tableColumn.setMinWidth(width);
-    }
-
-
-    /**
-     * findGitDir do finding the .git dir from currentFile variance.
-     * if There is .git return .git's file.
-     * else return null
-     * */
-    private static File findGitDir(File directory) {
-        File gitDir = new File(directory, ".git");
-        if (gitDir.exists() && gitDir.isDirectory()) {
-            return gitDir;
-        } else {
-            File parent = directory.getParentFile();
-            return parent != null ? findGitDir(parent) : null;
-        }
     }
 
     private void commitButton() {
@@ -1204,6 +1129,8 @@ public class FileManager {
 
         return commitPanel;
     }
+
+    // git Branch Button methods
     private void branchCreateButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for branch creation.", "Select Location");
@@ -1408,6 +1335,82 @@ public class FileManager {
         return branchCheckoutPanel;
     }
 
+    private void showErrorMessage(String errorMessage, String errorTitle) {
+        JOptionPane.showMessageDialog(gui, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void showThrowable(Throwable t) {
+        t.printStackTrace();
+        JOptionPane.showMessageDialog(gui, t.toString(), t.getMessage(), JOptionPane.ERROR_MESSAGE);
+        gui.repaint();
+    }
+
+    /**
+     * Update the table on the EDT
+     */
+    private void setTableData(final File[] files) {
+        SwingUtilities.invokeLater(
+                new Runnable() {
+                    public void run() {
+                        if (fileTableModel == null) {
+                            fileTableModel = new FileTableModel();
+                            table.setModel(fileTableModel);
+                        }
+                        table.getSelectionModel()
+                                .removeListSelectionListener(listSelectionListener);
+                        fileTableModel.setFiles(files);
+                        table.getSelectionModel().addListSelectionListener(listSelectionListener);
+                        if (!cellSizesSet) {
+                            Icon icon = fileSystemView.getSystemIcon(files[0]);
+
+                            // size adjustment to better account for icons
+                            table.setRowHeight(icon.getIconHeight() + rowIconPadding);
+
+                            setColumnWidth(0, -1);
+                            setColumnWidth(3, 60);
+                            table.getColumnModel().getColumn(3).setMaxWidth(120);
+                            setColumnWidth(4, -1);
+                            setColumnWidth(5, -1);
+                            setColumnWidth(6, -1);
+                            setColumnWidth(7, -1);
+                            setColumnWidth(8, -1);
+                            setColumnWidth(9, -1);
+
+                            cellSizesSet = true;
+                        }
+                    }
+                });
+    }
+
+    private void setColumnWidth(int column, int width) {
+        TableColumn tableColumn = table.getColumnModel().getColumn(column);
+        if (width < 0) {
+            // use the preferred width of the header..
+            JLabel label = new JLabel((String) tableColumn.getHeaderValue());
+            Dimension preferred = label.getPreferredSize();
+            // altered 10->14 as per camickr comment.
+            width = (int) preferred.getWidth() + 14;
+        }
+        tableColumn.setPreferredWidth(width);
+        tableColumn.setMaxWidth(width);
+        tableColumn.setMinWidth(width);
+    }
+
+
+    /**
+     * findGitDir do finding the .git dir from currentFile variance.
+     * if There is .git return .git's file.
+     * else return null
+     * */
+    private static File findGitDir(File directory) {
+        File gitDir = new File(directory, ".git");
+        if (gitDir.exists() && gitDir.isDirectory()) {
+            return gitDir;
+        } else {
+            File parent = directory.getParentFile();
+            return parent != null ? findGitDir(parent) : null;
+        }
+    }
 
     /**
      * Add the files that are contained within the directory of this node. Thanks to Hovercraft Full
