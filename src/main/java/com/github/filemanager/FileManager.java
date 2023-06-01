@@ -356,14 +356,14 @@ public class FileManager {
                     });
             toolBar.add(initButton);
 
-//            cloneButton = new JButton("clone");
-//            cloneButton.addActionListener(
-//                    new ActionListener() {
-//                        public void actionPerformed(ActionEvent ae) {
-//                            cloneButton();
-//                        }
-//                    });
-//            toolBar.add(cloneButton);
+            cloneButton = new JButton("clone");
+            cloneButton.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            cloneButton();
+                        }
+                    });
+            toolBar.add(cloneButton);
 
             toolBar.addSeparator();
 
@@ -702,6 +702,87 @@ public class FileManager {
             }
         }
         gui.repaint();
+    }
+
+    private void cloneButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for git clone.", "Select Location");
+            return;
+        }
+
+        // local repository can have multiple remote repository -> doesn't care whether directory already use git or not
+
+        // to separate ui and model to reopen the clone button.
+        JPanel clonePanel = createClonePanel();
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui, clonePanel, "Clone", JOptionPane.OK_CANCEL_OPTION);
+
+//        JTextField branchNameField = (JTextField) branchCreatePanel.getClientProperty("branchNameField");
+//        String branchName = branchNameField.getText();
+
+        // if user clicked ok. do clone.
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                JTextField repositoryAddressField = (JTextField) clonePanel.getClientProperty("repositoryAddressField");
+                String repositoryAddress = repositoryAddressField.getText();
+                if (repositoryAddress.trim().isEmpty()) {
+                    showErrorMessage("Repository address can't be empty.", "Empty Repository Address");
+                    return;
+                }
+
+                String path = currentFile.getPath();
+
+                JRadioButton selectedVisibility = (JRadioButton) clonePanel.getClientProperty("selectedVisibility");
+                String visibility = selectedVisibility.getText();
+                // 선택되지 않았을 경우 처리
+
+                if(visibility == "public"){
+                        Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).call();
+                }
+
+                else{
+                        //cloning when the repository is private.
+                }
+
+                JOptionPane.showMessageDialog(gui, "Successfully Cloned", "Clone Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (GitAPIException e) {
+                showErrorMessage("An error occurred during cloning process.", "Clone Error");
+            }
+        }
+
+        gui.repaint();
+    }
+
+    private JPanel createClonePanel() {
+        JPanel clonePanel = new JPanel(new BorderLayout(3, 3));
+
+        // to get the address of repository
+        clonePanel.add(new JLabel("Respository Address"), BorderLayout.NORTH);
+        JTextField repositoryAddressField = new JTextField(30);
+        clonePanel.add(repositoryAddressField, BorderLayout.CENTER);
+
+        clonePanel.putClientProperty("repositoryAddressField", repositoryAddressField);
+
+        JRadioButton privateRepository = new JRadioButton("Private");
+        JRadioButton publicRepository = new JRadioButton("Public");
+
+        ButtonGroup buttonGroup = new ButtonGroup();
+        buttonGroup.add(privateRepository);
+        buttonGroup.add(publicRepository);
+
+        JPanel visibilityPanel = new JPanel(new BorderLayout(3, 3));
+        visibilityPanel.add(new JLabel("Check Repository's Visibility"), BorderLayout.NORTH);
+        visibilityPanel.add(privateRepository, BorderLayout.CENTER);
+        visibilityPanel.add(publicRepository, BorderLayout.SOUTH);
+
+        clonePanel.add(visibilityPanel, BorderLayout.SOUTH);
+
+        JRadioButton selectedButton = (JRadioButton) buttonGroup.getSelection();
+        clonePanel.putClientProperty("selctedVisibility",selectedButton);
+
+        return clonePanel;
     }
 
     private void addButton() {
