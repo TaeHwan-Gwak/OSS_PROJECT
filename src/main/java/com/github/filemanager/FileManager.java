@@ -721,9 +721,6 @@ public class FileManager {
                 JOptionPane.showConfirmDialog(
                         gui, clonePanel, "Clone", JOptionPane.OK_CANCEL_OPTION);
 
-//        JTextField branchNameField = (JTextField) branchCreatePanel.getClientProperty("branchNameField");
-//        String branchName = branchNameField.getText();
-
         // if user clicked ok. do clone.
         if (result == JOptionPane.OK_OPTION) {
             try {
@@ -739,11 +736,12 @@ public class FileManager {
                 try {
                     Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).call();
                 } catch (TransportException e){
+                    // TransportException => repository is private because last clone had no user information
                     // new panel to get userID and token
                     JPanel insertIDPanel = createInsertIDPanel();
                     int res = JOptionPane.showConfirmDialog(
                             gui, insertIDPanel, "Private Repository", JOptionPane.OK_CANCEL_OPTION);
-                    // how to store these informations?
+                    // how to store these informations??????????????????
                     if(res == JOptionPane.OK_OPTION) {
                         JTextField IDTextField = (JTextField) insertIDPanel.getClientProperty("ID");
                         String ID = IDTextField.getText();
@@ -753,7 +751,8 @@ public class FileManager {
 
                         Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
                     }
-                    return;
+                    else
+                        return;
                 }
 
                 JOptionPane.showMessageDialog(gui, "Successfully Cloned", "Clone Success", JOptionPane.INFORMATION_MESSAGE);
@@ -795,7 +794,7 @@ public class FileManager {
         // get token from user
         JPanel tokenPanel = new JPanel(new BorderLayout(3, 3));
         tokenPanel.add(new JLabel("token"), BorderLayout.WEST);
-        JTextField tokenField = new JTextField(15);
+        JPasswordField tokenField = new JPasswordField(15);
         tokenPanel.add(tokenField, BorderLayout.EAST);
         insertIDPanel.add(tokenPanel, BorderLayout.SOUTH);
 
