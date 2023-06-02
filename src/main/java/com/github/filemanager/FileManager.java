@@ -49,8 +49,11 @@ import javax.swing.tree.*;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeStrategy;
+import org.eclipse.jgit.merge.Merger;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
@@ -1458,35 +1461,44 @@ public class FileManager {
                 JList<String> branchList = (JList<String>) mergePanel.getClientProperty("branchList");
                 String branchName = branchList.getSelectedValue();
 
+                String [] tokens=branchName.split("/");
+
+                String mergeBranch = tokens[2];
+                String currentBranch = getCurrentBranch(currentFile);
+
                 if (branchName == null || branchName.trim().isEmpty()) {
                     showErrorMessage("No branch selected.", "No Branch Selected");
                     return;
                 }
-
-                // git.branchDelete().setBranchNames(branchName).call();
-
-                CheckoutCommand coCmd = git.checkout();
-                // Commands are part of the api module, which include git-like calls
-                coCmd.setName(getCurrentBranch(currentFile));
-                coCmd.setCreateBranch(false); // probably not needed, just to make sure
-                coCmd.call(); // switch to "master" branch
-
-                MergeCommand mgCmd = git.merge();
-                mgCmd.include(branchName, null); // "foo" is considered as a Ref to a branch
-                MergeResult res = mgCmd.call(); // actually do the merge
-
-                if (res.getMergeStatus().equals(MergeResult.MergeStatus.CONFLICTING)){
-                    showErrorMessage(res.getConflicts().toString(), "Merge Conflict");
-                    // inform the user he has to handle the conflicts
+                else if (mergeBranch.equals(currentBranch)) {
+                    showErrorMessage("Same branch selected", "Same Branch Selected");
+                    return;
                 }
 
-                git.close();
+                String path = currentFile.getPath();
+                if(path.contains(" ")) {
+                    path = path.replace(" ", "\\ ");
+                }
+
+                Process p;
+                String cmd = "cd " + path + " && git merge " + mergeBranch;
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+
+
+                /*if() {
+                    cmd = "cd " + path + " && git merge --abort";
+                    String[] errorCommand = {"/bin/sh", "-c", cmd};
+                    p = Runtime.getRuntime().exec(errorCommand);
+                }
+
+                 */
 
                 JOptionPane.showMessageDialog(gui, "Successfully Merge", "Merge Success", JOptionPane.INFORMATION_MESSAGE);
             }
 
             gui.repaint();
-        } catch (IOException | GitAPIException e) {
+        } catch (IOException e) {
             showErrorMessage("An error occurred during the merge process.", "Merge Error");
         }
     }
