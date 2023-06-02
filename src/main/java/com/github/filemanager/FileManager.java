@@ -148,9 +148,8 @@ public class FileManager {
     // git Branch Buttons
     private JButton branchCreateButton;
     private JButton branchDeleteButton;
+    private JButton branchRenameButton;
     private JButton branchCheckoutButton;
-
-
 
     private JLabel fileName;
     private JTextField path;
@@ -442,6 +441,17 @@ public class FileManager {
                     }
             );
             toolBar.add(branchDeleteButton);
+
+            branchRenameButton = new JButton("rename");
+            branchRenameButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            branchRenameButton();
+                        }
+                    }
+            );
+            toolBar.add(branchRenameButton);
 
             branchCheckoutButton = new JButton("checkout");
             branchCheckoutButton.addActionListener(
@@ -1384,7 +1394,9 @@ public class FileManager {
     }
 
 
-    // branch rename button soon
+    private void branchRenameButton(){
+
+    }
 
 
     private void branchCheckoutButton() {
