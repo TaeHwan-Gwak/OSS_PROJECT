@@ -1262,7 +1262,7 @@ public class FileManager {
         return commitPanel;
     }
 
-    // git Branch Button methods
+    // Git Branch Button methods
     private void branchCreateButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for branch creation.", "Select Location");
@@ -1343,6 +1343,7 @@ public class FileManager {
 
             Git git = new Git(repository);
 
+            // to separate ui and model to reopen the branch delete button.
             JPanel branchDeletePanel = createBranchDeletePanel(git);
 
             int result =
@@ -1383,7 +1384,7 @@ public class FileManager {
             }
             JList<String> branchList = new JList<>(branchListModel);
 
-            branchDeletePanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchDeletePanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
             branchDeletePanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
             branchDeletePanel.putClientProperty("branchList", branchList);
         } catch (GitAPIException e) {
@@ -1394,8 +1395,86 @@ public class FileManager {
     }
 
 
-    private void branchRenameButton(){
+    private void branchRenameButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for branch renaming.", "Select Location");
+            return;
+        }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating branchRenamePanel.
+        }
+
+        try {
+            Repository repository =
+                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+            Git git = new Git(repository);
+
+            // to separate ui and model to reopen the branch rename button.
+            JPanel branchRenamePanel = createBranchRenamePanel(git);
+
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, branchRenamePanel, "Rename Branch", JOptionPane.OK_CANCEL_OPTION);
+
+            if (result == JOptionPane.OK_OPTION) {
+                JList<String> branchList = (JList<String>) branchRenamePanel.getClientProperty("branchList");
+                String oldBranchName = branchList.getSelectedValue();
+
+                JTextField newNameField = (JTextField) branchRenamePanel.getClientProperty("newNameField");
+                String newBranchName = newNameField.getText();
+
+                if (oldBranchName == null || oldBranchName.trim().isEmpty() || newBranchName.trim().isEmpty()) {
+                    showErrorMessage("No branch selected or new branch name is empty.", "No Branch Selected / Empty Name");
+                    return;
+                }
+
+                git.branchRename().setOldName(oldBranchName).setNewName(newBranchName).call();
+                git.close();
+
+                JOptionPane.showMessageDialog(gui, "Successfully Renamed Branch", "Branch Rename Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            gui.repaint();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during the branch renaming process.", "Branch Rename Error");
+        }
+    }
+
+    private JPanel createBranchRenamePanel(Git git) {
+        JPanel branchRenamePanel = new JPanel(new BorderLayout(3, 3));
+
+        try {
+            List<String> branches = git.branchList().call().stream().map(Ref::getName).collect(Collectors.toList());
+
+            DefaultListModel<String> branchListModel = new DefaultListModel<>();
+            for (String branch : branches) {
+                branchListModel.addElement(branch);
+            }
+            JList<String> branchList = new JList<>(branchListModel);
+
+            JTextField newNameField = new JTextField();
+            JLabel newNameLabel = new JLabel("New Branch Name");
+
+            JPanel newNamePanel = new JPanel(new BorderLayout());
+            newNamePanel.add(newNameLabel, BorderLayout.NORTH);
+            newNamePanel.add(newNameField, BorderLayout.CENTER);
+
+            branchRenamePanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
+            branchRenamePanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
+            branchRenamePanel.add(newNamePanel, BorderLayout.SOUTH);
+
+            branchRenamePanel.putClientProperty("branchList", branchList);
+            branchRenamePanel.putClientProperty("newNameField", newNameField);
+        } catch (GitAPIException e) {
+            showErrorMessage("Failed to load branches.", "Branch Load Error");
+        }
+
+        return branchRenamePanel;
     }
 
 
@@ -1459,7 +1538,7 @@ public class FileManager {
             }
             JList<String> branchList = new JList<>(branchListModel);
 
-            branchCheckoutPanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchCheckoutPanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
             branchCheckoutPanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
             branchCheckoutPanel.putClientProperty("branchList", branchList);
         } catch (GitAPIException e) {
