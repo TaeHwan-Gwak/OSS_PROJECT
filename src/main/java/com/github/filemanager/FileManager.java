@@ -737,26 +737,44 @@ public class FileManager {
                     Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).call();
                 } catch (TransportException e){
                     // TransportException => repository is private because last clone had no user information
-                    // new panel to get userID and token
-                    JPanel insertIDPanel = createInsertIDPanel();
-                    int res = JOptionPane.showConfirmDialog(
-                            gui, insertIDPanel, "Private Repository", JOptionPane.OK_CANCEL_OPTION);
-                    // how to store these informations??????????????????
-                    if(res == JOptionPane.OK_OPTION) {
-                        JTextField IDTextField = (JTextField) insertIDPanel.getClientProperty("ID");
-                        String ID = IDTextField.getText();
-
-                        JTextField tokenTextField = (JTextField) insertIDPanel.getClientProperty("token");
-                        String token = tokenTextField.getText();
+                    String ID, token;
+                    File userInformation = new File("user_information.txt");
+                    if(userInformation.exists()){
+                        // get user information from .txt file
+                        BufferedReader reader = new BufferedReader(new FileReader(userInformation));
+                        ID = reader.readLine();
+                        token = reader.readLine();
 
                         Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
                     }
-                    else
-                        return;
+                    else {
+                        // use new panel to get userID and token
+                        JPanel insertIDPanel = createInsertIDPanel();
+                        int res = JOptionPane.showConfirmDialog(
+                                gui, insertIDPanel, "GitHub User Information", JOptionPane.OK_CANCEL_OPTION);
+                        if (res == JOptionPane.OK_OPTION) {
+                            // get ID and token from user
+                            JTextField IDTextField = (JTextField) insertIDPanel.getClientProperty("ID");
+                            ID = IDTextField.getText();
+                            JTextField tokenTextField = (JTextField) insertIDPanel.getClientProperty("token");
+                            token = tokenTextField.getText();
+
+                            // create .txt file and store user information in it
+                            userInformation.createNewFile();
+                            BufferedWriter writer = new BufferedWriter(new FileWriter(userInformation));
+                            writer.write(ID);
+                            writer.newLine();
+                            writer.write(token);
+                            writer.flush();
+
+                            Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
+                        } else
+                            return;
+                    }
                 }
 
                 JOptionPane.showMessageDialog(gui, "Successfully Cloned", "Clone Success", JOptionPane.INFORMATION_MESSAGE);
-            } catch (GitAPIException e) {
+            } catch (IOException | GitAPIException e) {
                 showErrorMessage("An error occurred during cloning process.", "Clone Error");
             }
         }
