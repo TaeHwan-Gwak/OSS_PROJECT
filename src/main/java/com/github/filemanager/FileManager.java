@@ -1295,14 +1295,12 @@ public class FileManager {
 
             if(result == JOptionPane.OK_OPTION){
                 JList<String> commitList = (JList<String>) commitHistoryPanel.getClientProperty("commitList");
-                String commitId = commitList.getSelectedValue().split(":")[0];
+                String commitId = commitList.getSelectedValue().split(" -")[0];
 
                 RevCommit selectedCommit = getCommitById(git, commitId);
 
                 JPanel commitDetailsPanel = createCommitDetailsPanel(selectedCommit);
-                JOptionPane.showMessageDialog(gui, commitDetailsPanel, "Commit History Detail", JOptionPane.PLAIN_MESSAGE);
-
-
+                JOptionPane.showMessageDialog(gui, commitDetailsPanel, commitId.substring(0,10), JOptionPane.PLAIN_MESSAGE);
             }
             git.close();
         } catch (IOException | GitAPIException e) {
@@ -1316,7 +1314,7 @@ public class FileManager {
         JPanel commitHistoryPanel = new JPanel(new BorderLayout(3, 3));
         DefaultListModel<String> commitListModel = new DefaultListModel<>();
         for (RevCommit rev : logs) {
-            commitListModel.addElement(rev.getId().getName() + ": " + rev.getShortMessage());
+            commitListModel.addElement(rev.getId().getName() + " - [" + rev.getShortMessage() + "]");
         }
         JList<String> commitList = new JList<>(commitListModel);
         commitHistoryPanel.add(new JScrollPane(commitList), BorderLayout.CENTER);
@@ -1335,18 +1333,34 @@ public class FileManager {
         JPanel commitDetailsPanel = new JPanel();
         commitDetailsPanel.setLayout(new BoxLayout(commitDetailsPanel, BoxLayout.Y_AXIS));
 
-        commitDetailsPanel.add(new JLabel("Author: " + commit.getAuthorIdent().getName()));
-        commitDetailsPanel.add(new JLabel("Date: " + new Date(commit.getCommitTime() * 1000L)));
+        commitDetailsPanel.add(new JLabel("- Author"));
+        JTextField authorField = new JTextField(commit.getAuthorIdent().getName());
+        authorField.setEditable(false);
+        commitDetailsPanel.add(authorField);
+
+        commitDetailsPanel.add(new JLabel("- Date"));
+        JTextField dateField = new JTextField(new Date(commit.getCommitTime() * 1000L).toString());
+        dateField.setEditable(false);
+        commitDetailsPanel.add(dateField);
+
+        commitDetailsPanel.add(new JLabel("- Parent"));
         if(commit.getParentCount() != 0) {
-            JLabel parentLabel;
+            JTextField parentField;
             RevCommit[] parents = commit.getParents();
             ArrayList<String> parentList = new ArrayList<>();
             for (int i = 0; i < commit.getParentCount(); i++) {
-                parentList.add(i, parents[i].getId().getName());
-                parentLabel = new JLabel(parentList.get(i));
-                commitDetailsPanel.add(parentLabel);
+                parentList.add(i, parents[i].getId().getName().substring(0,10));
+                parentField = new JTextField(parentList.get(i));
+                parentField.setEditable(false);
+                commitDetailsPanel.add(parentField);
             }
         }
+
+        commitDetailsPanel.add(new JLabel("- Commit Message"));
+        JTextField messageField = new JTextField(commit.getShortMessage());
+        messageField.setEditable(false);
+        commitDetailsPanel.add(messageField);
+
         return commitDetailsPanel;
     }
 
