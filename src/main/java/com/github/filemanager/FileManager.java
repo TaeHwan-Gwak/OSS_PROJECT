@@ -1430,7 +1430,7 @@ public class FileManager {
 
     private void mergeButton(){
         if (currentFile == null) {
-            showErrorMessage("No location selected for branch deletion.", "Select Location");
+            showErrorMessage("No location selected for merge.", "Select Location");
             return;
         }
 
@@ -1441,15 +1441,61 @@ public class FileManager {
             return; // Exit the method without creating branchDeletePanel.
         }
 
-        /*
         try {
+            // get the repository to use git command.
+            Repository repository =
+                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
 
+            Git git = new Git(repository);
+
+            JPanel mergePanel = createMergePanel(git);
+
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, mergePanel, "Merge", JOptionPane.OK_CANCEL_OPTION);
+
+            // if user clicked ok. do branch deletion.
+            if (result == JOptionPane.OK_OPTION) {
+                JList<String> branchList = (JList<String>) mergePanel.getClientProperty("branchList");
+                String branchName = branchList.getSelectedValue();
+
+                if (branchName == null || branchName.trim().isEmpty()) {
+                    showErrorMessage("No branch selected.", "No Branch Selected");
+                    return;
+                }
+
+                git.branchDelete().setBranchNames(branchName).call();
+                git.close();
+
+                JOptionPane.showMessageDialog(gui, "Successfully Merge", "Merge Success", JOptionPane.INFORMATION_MESSAGE);
+            }
 
             gui.repaint();
         } catch (IOException | GitAPIException e) {
-            showErrorMessage("An error occurred during the branch deletion process.", "Branch Deletion Error");
+            showErrorMessage("An error occurred during the merge process.", "Merge Error");
         }
-         */
+    }
+
+    private JPanel createMergePanel(Git git) {
+        JPanel branchPanel = new JPanel(new BorderLayout(3, 3));
+
+        try {
+            List<String> branches = git.branchList().call().stream().map(Ref::getName).collect(Collectors.toList());
+
+            DefaultListModel<String> branchListModel = new DefaultListModel<>();
+            for (String branch : branches) {
+                branchListModel.addElement(branch);
+            }
+            JList<String> branchList = new JList<>(branchListModel);
+
+            branchPanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchPanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
+            branchPanel.putClientProperty("branchList", branchList);
+        } catch (GitAPIException e) {
+            showErrorMessage("Failed to load branches.", "Branch Load Error");
+        }
+
+        return branchPanel;
     }
 
     /**
