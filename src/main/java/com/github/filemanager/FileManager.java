@@ -1276,14 +1276,14 @@ public class FileManager {
             return; // Exit the method without creating branchCreatePanel.
         }
 
-        // to separate ui and model to reopen the branch create button.
+        // separate ui and model
         JPanel branchCreatePanel = createBranchCreatePanel();
 
         int result =
                 JOptionPane.showConfirmDialog(
                         gui, branchCreatePanel, "Create Branch", JOptionPane.OK_CANCEL_OPTION);
 
-        // if user clicked ok. do branch creation.
+        // if user click ok. do branch creation.
         if (result == JOptionPane.OK_OPTION) {
             try {
                 JTextField branchNameField = (JTextField) branchCreatePanel.getClientProperty("branchNameField");
@@ -1343,17 +1343,19 @@ public class FileManager {
 
             Git git = new Git(repository);
 
-            // to separate ui and model to reopen the branch delete button.
+            // separate ui and model
             JPanel branchDeletePanel = createBranchDeletePanel(git);
 
             int result =
                     JOptionPane.showConfirmDialog(
                             gui, branchDeletePanel, "Delete Branch", JOptionPane.OK_CANCEL_OPTION);
 
-            // if user clicked ok. do branch deletion.
+            // if user click ok. do branch deletion.
             if (result == JOptionPane.OK_OPTION) {
+                // get the chosen branch
                 JList<String> branchList = (JList<String>) branchDeletePanel.getClientProperty("branchList");
                 String branchName = branchList.getSelectedValue();
+
 
                 if (branchName == null || branchName.trim().isEmpty()) {
                     showErrorMessage("No branch selected.", "No Branch Selected");
@@ -1414,7 +1416,7 @@ public class FileManager {
 
             Git git = new Git(repository);
 
-            // to separate ui and model to reopen the branch rename button.
+            // separate ui and model
             JPanel branchRenamePanel = createBranchRenamePanel(git);
 
             int result =
@@ -1423,8 +1425,11 @@ public class FileManager {
 
             if (result == JOptionPane.OK_OPTION) {
                 JList<String> branchList = (JList<String>) branchRenamePanel.getClientProperty("branchList");
+
+                // get the old branch name
                 String oldBranchName = branchList.getSelectedValue();
 
+                // get the new branch name
                 JTextField newNameField = (JTextField) branchRenamePanel.getClientProperty("newNameField");
                 String newBranchName = newNameField.getText();
 
@@ -1476,7 +1481,6 @@ public class FileManager {
 
         return branchRenamePanel;
     }
-
 
     private void branchCheckoutButton() {
         if (currentFile == null) {
