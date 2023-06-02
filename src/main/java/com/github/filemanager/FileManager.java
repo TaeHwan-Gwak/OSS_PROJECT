@@ -269,7 +269,7 @@ public class FileManager {
             size = new JLabel();
             fileDetailsValues.add(size);
             //current branch
-            fileDetailsLabels.add(new JLabel("Current Branch",JLabel.TRAILING));
+            fileDetailsLabels.add(new JLabel("Current Branch", JLabel.TRAILING));
             currentBranch = new JTextField(5);
             currentBranch.setEditable(false);
             fileDetailsValues.add(currentBranch);
@@ -427,7 +427,9 @@ public class FileManager {
             branchCreateButton.addActionListener(
                     new ActionListener() {
                         @Override
-                        public void actionPerformed(ActionEvent e) { branchCreateButton(); }
+                        public void actionPerformed(ActionEvent e) {
+                            branchCreateButton();
+                        }
                     }
             );
             toolBar.add(branchCreateButton);
@@ -512,16 +514,17 @@ public class FileManager {
         // not found!
         return null;
     }
-    private String getCurrentBranch(File currentFile){
+
+    private String getCurrentBranch(File currentFile) {
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
             return "";
         }
-        try{
+        try {
             Repository repository = Git.open(new File(gitDir.getPath())).getRepository();
             String branch = repository.getBranch();
             return branch;
-        } catch(IOException e) {
+        } catch (IOException e) {
             return "";
         }
     }
@@ -685,7 +688,6 @@ public class FileManager {
     }
 
 
-
     private void addButton() {
         if (currentFile == null) {
             showErrorMessage("No file selected for git add.", "Select File");
@@ -695,7 +697,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating the add Panel.
         }
 
@@ -733,7 +735,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating the restore Panel.
         }
 
@@ -774,11 +776,11 @@ public class FileManager {
                     output.append(line).append("\n");
 
                     status = output.toString().substring(0, 2);
-                    if(status.equals("??")) {
-                        showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                    if (status.equals("??")) {
+                        showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
                         return;
-                    } else if(status.equals("A ")) {
-                        showErrorMessage("If you want restore, click restore --staged","Added File ?");
+                    } else if (status.equals("A ")) {
+                        showErrorMessage("If you want restore, click restore --staged", "Added File ?");
                         return;
                     }
 
@@ -815,8 +817,8 @@ public class FileManager {
                     output.append(line).append("\n");
 
                     status = output.toString().substring(0, 2);
-                    if(status.equals("??")) {
-                        showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                    if (status.equals("??")) {
+                        showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
                         return;
                     }
 
@@ -843,7 +845,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating the rm Panel.
         }
 
@@ -872,8 +874,8 @@ public class FileManager {
                 output.append(line).append("\n");
 
                 status = output.toString().substring(0, 2);
-                if(status.equals("??")) {
-                    showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                if (status.equals("??")) {
+                    showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
                     return;
                 }
             }
@@ -935,7 +937,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating the mv Panel.
         }
 
@@ -963,8 +965,8 @@ public class FileManager {
                 output.append(line).append("\n");
 
                 status = output.toString().substring(0, 2);
-                if(status.equals("??")) {
-                    showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
+                if (status.equals("??")) {
+                    showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
                     return;
                 }
             }
@@ -978,17 +980,17 @@ public class FileManager {
                         "Text new file name or new path you want to git mv this file.");
 
         //moveTo가 이동할 path이고, repository 밖의 경로일 경우 error
-        if(moveTo.contains("/")){
+        if (moveTo.contains("/")) {
             gitDir = findGitDir(currentFile.getAbsoluteFile());
             File newFile = new File(moveTo);
             File newGitDir = findGitDir(newFile.getAbsoluteFile());
             if (!gitDir.equals(newGitDir)) {
-                showErrorMessage("This path is outside repository.","Outside Repository");
+                showErrorMessage("This path is outside repository.", "Outside Repository");
                 return; // Exit the method without creating the mv Panel.
             }
         }
 
-        if(moveTo != null) {
+        if (moveTo != null) {
             try {
 
                 String file = currentFile.getName();
@@ -1013,14 +1015,14 @@ public class FileManager {
         }
 
         // file can't use git init command.
-        if (!currentFile.isDirectory()){
-            showErrorMessage("The file can't use git. choose the Directory.","File Can't Use Git");
+        if (!currentFile.isDirectory()) {
+            showErrorMessage("The file can't use git. choose the Directory.", "File Can't Use Git");
             return;
         }
 
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir != null) {
-            showErrorMessage("This directory already use git.","Already Use Git Directory");
+            showErrorMessage("This directory already use git.", "Already Use Git Directory");
             return; // Exit the method without creating the init panel
         }
 
@@ -1110,7 +1112,7 @@ public class FileManager {
      * findGitDir do finding the .git dir from currentFile variance.
      * if There is .git return .git's file.
      * else return null
-     * */
+     */
     private static File findGitDir(File directory) {
         File gitDir = new File(directory, ".git");
         if (gitDir.exists() && gitDir.isDirectory()) {
@@ -1131,7 +1133,7 @@ public class FileManager {
         // Handle the case where there is no .git directory found
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git","No Git Directory");
+            showErrorMessage("This directory doesn't use git", "No Git Directory");
             return; // Exit the method without creating the commit panel
         }
 
@@ -1184,7 +1186,7 @@ public class FileManager {
             File gitDir = findGitDir(currentFile.getAbsoluteFile());
             if (gitDir == null) {
                 // Handle the case where there is no .git directory found
-                showErrorMessage("This directory doesn't use git","No Git Directory");
+                showErrorMessage("This directory doesn't use git", "No Git Directory");
             }
 
             // get the repository to use git command.
@@ -1226,6 +1228,7 @@ public class FileManager {
 
         return commitPanel;
     }
+
     private void branchCreateButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for branch creation.", "Select Location");
@@ -1235,7 +1238,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating branchCreatePanel.
         }
 
@@ -1286,7 +1289,7 @@ public class FileManager {
         return branchCreatePanel;
     }
 
-    private void branchDeleteButton(){
+    private void branchDeleteButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for branch deletion.", "Select Location");
             return;
@@ -1295,7 +1298,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating branchDeletePanel.
         }
 
@@ -1369,7 +1372,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating branchCheckoutPanel.
         }
 
@@ -1430,7 +1433,7 @@ public class FileManager {
         return branchCheckoutPanel;
     }
 
-    private void mergeButton(){
+    private void mergeButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for merge.", "Select Location");
             return;
@@ -1439,7 +1442,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
             return; // Exit the method without creating mergePanel.
         }
 
@@ -1461,7 +1464,7 @@ public class FileManager {
                 JList<String> branchList = (JList<String>) mergePanel.getClientProperty("branchList");
                 String branchName = branchList.getSelectedValue();
 
-                String [] tokens=branchName.split("/");
+                String[] tokens = branchName.split("/");
 
                 String mergeBranch = tokens[2];
                 String currentBranch = getCurrentBranch(currentFile);
@@ -1469,14 +1472,13 @@ public class FileManager {
                 if (branchName == null || branchName.trim().isEmpty()) {
                     showErrorMessage("No branch selected.", "No Branch Selected");
                     return;
-                }
-                else if (mergeBranch.equals(currentBranch)) {
+                } else if (mergeBranch.equals(currentBranch)) {
                     showErrorMessage("Same branch selected", "Same Branch Selected");
                     return;
                 }
 
                 String path = currentFile.getPath();
-                if(path.contains(" ")) {
+                if (path.contains(" ")) {
                     path = path.replace(" ", "\\ ");
                 }
 
@@ -1485,20 +1487,36 @@ public class FileManager {
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
 
+                Thread.sleep(2000);
 
-                /*if() {
-                    cmd = "cd " + path + " && git merge --abort";
-                    String[] errorCommand = {"/bin/sh", "-c", cmd};
-                    p = Runtime.getRuntime().exec(errorCommand);
+                String checkCmd = "cd " + path + "/.git && cat MERGE_HEAD";
+                String[] checkCommand = {"/bin/sh", "-c", checkCmd};
+                p = Runtime.getRuntime().exec(checkCommand);
+
+                InputStream inputStream = p.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                String line;
+                StringBuilder output = new StringBuilder();
+
+                // 프로세스 실행 결과 읽어오기
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
                 }
 
-                 */
+                if (!output.isEmpty() && !output.toString().substring(0, 3).equals("cat")) {
+                    String errorCmd = "cd " + path + " && git merge --abort";
+                    String[] errorCommand = {"/bin/sh", "-c", errorCmd};
+                    p = Runtime.getRuntime().exec(errorCommand);
+
+                    JOptionPane.showMessageDialog(gui, "Failed Merge, Already merge --abort", "Merge Fail", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
 
                 JOptionPane.showMessageDialog(gui, "Successfully Merge", "Merge Success", JOptionPane.INFORMATION_MESSAGE);
             }
 
             gui.repaint();
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             showErrorMessage("An error occurred during the merge process.", "Merge Error");
         }
     }
