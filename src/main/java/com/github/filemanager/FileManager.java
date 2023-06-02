@@ -51,8 +51,11 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
@@ -144,6 +147,7 @@ public class FileManager {
     private JButton rmButton;
     private JButton mvButton;
     private JButton commitButton;
+    private JButton historyButton;
 
     // git Branch Buttons
     private JButton branchCreateButton;
@@ -417,6 +421,17 @@ public class FileManager {
                     }
             );
             toolBar.add(commitButton);
+
+            historyButton = new JButton("history");
+            historyButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent ae) {
+                            historyButton();
+                        }
+                    }
+            );
+            toolBar.add(historyButton);
 
             // git branch Buttons
             toolBar.addSeparator();
@@ -750,7 +765,8 @@ public class FileManager {
                         ID = reader.readLine();
                         token = reader.readLine();
 
-                        Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
+                        Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).
+                                setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
                     }
                     else {
                         // use new panel to get userID and token
@@ -772,13 +788,15 @@ public class FileManager {
                             writer.write(token);
                             writer.flush();
 
-                            Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
+                            Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).
+                                    setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
                         } else
                             return;
                     }
                 }
 
-                JOptionPane.showMessageDialog(gui, "Successfully Cloned", "Clone Success", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(gui, "Successfully Cloned", "Clone Success",
+                                                JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException | GitAPIException e) {
                 showErrorMessage("An error occurred during cloning process.", "Clone Error");
             }
@@ -1152,7 +1170,6 @@ public class FileManager {
             return;
         }
 
-
         // Handle the case where there is no .git directory found
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
@@ -1250,6 +1267,61 @@ public class FileManager {
         }
 
         return commitPanel;
+    }
+
+    private void historyButton(){
+        if (currentFile == null) {
+            showErrorMessage("No location selected.", "Select Location");
+            return;
+        }
+
+        // Handle the case where there is no .git directory found
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git","No Git Directory");
+            return; // Exit the method without creating the history panel
+        }
+
+        // to separate ui and model
+        JPanel historyPanel = createHistoryPanel();
+
+        JDialog dialog = new JDialog();
+        dialog.add(historyPanel);
+        dialog.setTitle("Git Commit History");
+        dialog.setSize(500,400);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
+
+    }
+
+    private JPanel createHistoryPanel() {
+        JPanel historyPanel = new JPanel(new BorderLayout(3, 3));
+
+        try(Repository repository = Git.open(currentFile).getRepository()){
+            ObjectId commitId = repository.resolve("HEAD");
+            DefaultListModel<RevCommit> commitListModel = new DefaultListModel<>();
+
+            try(RevWalk revWalk = new RevWalk(repository)){
+                RevCommit commit  = revWalk.parseCommit(commitId);
+
+                revWalk.markStart(commit);
+                for(RevCommit revCommit : revWalk){
+                    commitListModel.addElement(revCommit);
+                }
+
+                JList<RevCommit> commitList = new JList<>(commitListModel);
+
+                historyPanel.add(new JLabel("Commits"),BorderLayout.NORTH);
+                historyPanel.add(new JScrollPane(commitList), BorderLayout.CENTER);
+
+                JPanel
+            }
+        } catch(IOException e){
+            showErrorMessage("An error occurred while trying to show commit history.", "Error");
+        }
+
+        return historyPanel;
     }
 
     // git Branch Button methods
