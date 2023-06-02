@@ -460,8 +460,6 @@ public class FileManager {
 
             toolBar.addSeparator();
 
-            toolBar.add(new JLabel("merge "));
-
             mergeButton = new JButton("merge");
             mergeButton.addActionListener(
                     new ActionListener() {
@@ -1487,6 +1485,8 @@ public class FileManager {
                 String[] command = {"/bin/sh", "-c", cmd};
                 p = Runtime.getRuntime().exec(command);
 
+
+                // execute merge
                 Thread.sleep(2000);
 
                 String checkCmd = "cd " + path + "/.git && cat MERGE_HEAD";
@@ -1498,7 +1498,6 @@ public class FileManager {
                 String line;
                 StringBuilder output = new StringBuilder();
 
-                // 프로세스 실행 결과 읽어오기
                 while ((line = reader.readLine()) != null) {
                     output.append(line).append("\n");
                 }
