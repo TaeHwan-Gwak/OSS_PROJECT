@@ -147,7 +147,7 @@ public class FileManager {
     private JButton rmButton;
     private JButton mvButton;
     private JButton commitButton;
-    private JButton historyButton;
+    private JButton commitHistoryButton;
 
     // git Branch Buttons
     private JButton branchCreateButton;
@@ -422,16 +422,16 @@ public class FileManager {
             );
             toolBar.add(commitButton);
 
-            historyButton = new JButton("history");
-            historyButton.addActionListener(
+            commitHistoryButton = new JButton("history");
+            commitHistoryButton.addActionListener(
                     new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent ae) {
-                            historyButton();
+                            commitHistoryButton();
                         }
                     }
             );
-            toolBar.add(historyButton);
+            toolBar.add(commitHistoryButton);
 
             // git branch Buttons
             toolBar.addSeparator();
@@ -1269,59 +1269,85 @@ public class FileManager {
         return commitPanel;
     }
 
-    private void historyButton(){
+
+    private void commitHistoryButton() {
         if (currentFile == null) {
-            showErrorMessage("No location selected.", "Select Location");
+            showErrorMessage("No location selected for viewing commit history.", "Select Location");
             return;
         }
 
-        // Handle the case where there is no .git directory found
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git","No Git Directory");
-            return; // Exit the method without creating the history panel
+            showErrorMessage("This directory doesn't use git.", "No Git Directory");
+            return;
         }
 
-        // to separate ui and model
-        JPanel historyPanel = createHistoryPanel();
+        try {
+            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+            Git git = new Git(repository);
+            Iterable<RevCommit> logs = git.log().all().call();
 
-        JDialog dialog = new JDialog();
-        dialog.add(historyPanel);
-        dialog.setTitle("Git Commit History");
-        dialog.setSize(500,400);
-        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
+            JPanel commitHistoryPanel = createCommitHistoryPanel(logs);
 
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, commitHistoryPanel, "History", JOptionPane.OK_CANCEL_OPTION);
+
+            if(result == JOptionPane.OK_OPTION){
+                JList<String> commitList = (JList<String>) commitHistoryPanel.getClientProperty("commitList");
+                String commitId = commitList.getSelectedValue().split(":")[0];
+
+                RevCommit selectedCommit = getCommitById(git, commitId);
+
+                JPanel commitDetailsPanel = createCommitDetailsPanel(selectedCommit);
+                JOptionPane.showMessageDialog(gui, commitDetailsPanel, "Commit History Detail", JOptionPane.PLAIN_MESSAGE);
+
+
+            }
+            git.close();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during loading the commit history.", "Commit History Error");
+        }
+
+        gui.repaint();
     }
 
-    private JPanel createHistoryPanel() {
-        JPanel historyPanel = new JPanel(new BorderLayout(3, 3));
-
-        try(Repository repository = Git.open(currentFile).getRepository()){
-            ObjectId commitId = repository.resolve("HEAD");
-            DefaultListModel<RevCommit> commitListModel = new DefaultListModel<>();
-
-            try(RevWalk revWalk = new RevWalk(repository)){
-                RevCommit commit  = revWalk.parseCommit(commitId);
-
-                revWalk.markStart(commit);
-                for(RevCommit revCommit : revWalk){
-                    commitListModel.addElement(revCommit);
-                }
-
-                JList<RevCommit> commitList = new JList<>(commitListModel);
-
-                historyPanel.add(new JLabel("Commits"),BorderLayout.NORTH);
-                historyPanel.add(new JScrollPane(commitList), BorderLayout.CENTER);
-
-                JPanel
-            }
-        } catch(IOException e){
-            showErrorMessage("An error occurred while trying to show commit history.", "Error");
+    private JPanel createCommitHistoryPanel(Iterable<RevCommit> logs) {
+        JPanel commitHistoryPanel = new JPanel(new BorderLayout(3, 3));
+        DefaultListModel<String> commitListModel = new DefaultListModel<>();
+        for (RevCommit rev : logs) {
+            commitListModel.addElement(rev.getId().getName() + ": " + rev.getShortMessage());
         }
+        JList<String> commitList = new JList<>(commitListModel);
+        commitHistoryPanel.add(new JScrollPane(commitList), BorderLayout.CENTER);
 
-        return historyPanel;
+        commitHistoryPanel.putClientProperty("commitList", commitList);
+        return commitHistoryPanel;
+    }
+
+    private RevCommit getCommitById(Git git, String commitId) throws IOException {
+        try (RevWalk revWalk = new RevWalk(git.getRepository())) {
+            return revWalk.parseCommit(ObjectId.fromString(commitId));
+        }
+    }
+
+    private JPanel createCommitDetailsPanel(RevCommit commit) {
+        JPanel commitDetailsPanel = new JPanel();
+        commitDetailsPanel.setLayout(new BoxLayout(commitDetailsPanel, BoxLayout.Y_AXIS));
+
+        commitDetailsPanel.add(new JLabel("Author: " + commit.getAuthorIdent().getName()));
+        commitDetailsPanel.add(new JLabel("Date: " + new Date(commit.getCommitTime() * 1000L)));
+        if(commit.getParentCount() != 0) {
+            JLabel parentLabel;
+            RevCommit[] parents = commit.getParents();
+            ArrayList<String> parentList = new ArrayList<>();
+            for (int i = 0; i < commit.getParentCount(); i++) {
+                parentList.add(i, parents[i].getId().getName());
+                parentLabel = new JLabel(parentList.get(i));
+                commitDetailsPanel.add(parentLabel);
+            }
+        }
+        return commitDetailsPanel;
     }
 
     // git Branch Button methods
