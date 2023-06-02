@@ -712,7 +712,11 @@ public class FileManager {
             return;
         }
 
-        // local repository can have multiple remote repository -> doesn't care whether directory already use git or not
+        // JGit can't clone if the directory already contains objects.
+        if(currentFile.listFiles() != null){
+            showErrorMessage("Destination path is not an empty directory.", "Already Exists");
+            return;
+        }
 
         // to separate ui and model to reopen the clone button.
         JPanel clonePanel = createClonePanel();
@@ -740,6 +744,7 @@ public class FileManager {
                     String ID, token;
                     File userInformation = new File("user_information.txt");
                     if(userInformation.exists()){
+                        // user_information.txt already exists => user information is stored in it
                         // get user information from .txt file
                         BufferedReader reader = new BufferedReader(new FileReader(userInformation));
                         ID = reader.readLine();
