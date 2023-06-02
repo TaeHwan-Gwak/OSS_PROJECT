@@ -47,8 +47,7 @@ import javax.swing.table.*;
 import javax.swing.tree.*;
 
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -1438,7 +1437,7 @@ public class FileManager {
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
             showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
-            return; // Exit the method without creating branchDeletePanel.
+            return; // Exit the method without creating mergePanel.
         }
 
         try {
@@ -1454,7 +1453,7 @@ public class FileManager {
                     JOptionPane.showConfirmDialog(
                             gui, mergePanel, "Merge", JOptionPane.OK_CANCEL_OPTION);
 
-            // if user clicked ok. do branch deletion.
+            // if user clicked ok. do merge.
             if (result == JOptionPane.OK_OPTION) {
                 JList<String> branchList = (JList<String>) mergePanel.getClientProperty("branchList");
                 String branchName = branchList.getSelectedValue();
@@ -1464,7 +1463,23 @@ public class FileManager {
                     return;
                 }
 
-                git.branchDelete().setBranchNames(branchName).call();
+                // git.branchDelete().setBranchNames(branchName).call();
+
+                CheckoutCommand coCmd = git.checkout();
+                // Commands are part of the api module, which include git-like calls
+                coCmd.setName(getCurrentBranch(currentFile));
+                coCmd.setCreateBranch(false); // probably not needed, just to make sure
+                coCmd.call(); // switch to "master" branch
+
+                MergeCommand mgCmd = git.merge();
+                mgCmd.include(branchName, null); // "foo" is considered as a Ref to a branch
+                MergeResult res = mgCmd.call(); // actually do the merge
+
+                if (res.getMergeStatus().equals(MergeResult.MergeStatus.CONFLICTING)){
+                    showErrorMessage(res.getConflicts().toString(), "Merge Conflict");
+                    // inform the user he has to handle the conflicts
+                }
+
                 git.close();
 
                 JOptionPane.showMessageDialog(gui, "Successfully Merge", "Merge Success", JOptionPane.INFORMATION_MESSAGE);
