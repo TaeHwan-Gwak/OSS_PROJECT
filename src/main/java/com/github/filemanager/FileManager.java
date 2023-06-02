@@ -43,6 +43,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import javax.swing.table.*;
 import javax.swing.tree.*;
 
@@ -152,9 +153,8 @@ public class FileManager {
     // git Branch Buttons
     private JButton branchCreateButton;
     private JButton branchDeleteButton;
+    private JButton branchRenameButton;
     private JButton branchCheckoutButton;
-
-
 
     private JLabel fileName;
     private JTextField path;
@@ -457,6 +457,17 @@ public class FileManager {
                     }
             );
             toolBar.add(branchDeleteButton);
+
+            branchRenameButton = new JButton("rename");
+            branchRenameButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            branchRenameButton();
+                        }
+                    }
+            );
+            toolBar.add(branchRenameButton);
 
             branchCheckoutButton = new JButton("checkout");
             branchCheckoutButton.addActionListener(
@@ -1269,7 +1280,6 @@ public class FileManager {
         return commitPanel;
     }
 
-
     private void commitHistoryButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for viewing commit history.", "Select Location");
@@ -1378,14 +1388,14 @@ public class FileManager {
             return; // Exit the method without creating branchCreatePanel.
         }
 
-        // to separate ui and model to reopen the branch create button.
+        // separate ui and model
         JPanel branchCreatePanel = createBranchCreatePanel();
 
         int result =
                 JOptionPane.showConfirmDialog(
                         gui, branchCreatePanel, "Create Branch", JOptionPane.OK_CANCEL_OPTION);
 
-        // if user clicked ok. do branch creation.
+        // if user click ok. do branch creation.
         if (result == JOptionPane.OK_OPTION) {
             try {
                 JTextField branchNameField = (JTextField) branchCreatePanel.getClientProperty("branchNameField");
@@ -1445,16 +1455,19 @@ public class FileManager {
 
             Git git = new Git(repository);
 
+            // separate ui and model
             JPanel branchDeletePanel = createBranchDeletePanel(git);
 
             int result =
                     JOptionPane.showConfirmDialog(
                             gui, branchDeletePanel, "Delete Branch", JOptionPane.OK_CANCEL_OPTION);
 
-            // if user clicked ok. do branch deletion.
+            // if user click ok. do branch deletion.
             if (result == JOptionPane.OK_OPTION) {
+                // get the chosen branch
                 JList<String> branchList = (JList<String>) branchDeletePanel.getClientProperty("branchList");
                 String branchName = branchList.getSelectedValue();
+
 
                 if (branchName == null || branchName.trim().isEmpty()) {
                     showErrorMessage("No branch selected.", "No Branch Selected");
@@ -1485,7 +1498,7 @@ public class FileManager {
             }
             JList<String> branchList = new JList<>(branchListModel);
 
-            branchDeletePanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchDeletePanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
             branchDeletePanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
             branchDeletePanel.putClientProperty("branchList", branchList);
         } catch (GitAPIException e) {
@@ -1496,8 +1509,90 @@ public class FileManager {
     }
 
 
-    // branch rename button soon
+    private void branchRenameButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for branch renaming.", "Select Location");
+            return;
+        }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating branchRenamePanel.
+        }
+
+        try {
+            Repository repository =
+                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+            Git git = new Git(repository);
+
+            // separate ui and model
+            JPanel branchRenamePanel = createBranchRenamePanel(git);
+
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, branchRenamePanel, "Rename Branch", JOptionPane.OK_CANCEL_OPTION);
+
+            if (result == JOptionPane.OK_OPTION) {
+                JList<String> branchList = (JList<String>) branchRenamePanel.getClientProperty("branchList");
+
+                // get the old branch name
+                String oldBranchName = branchList.getSelectedValue();
+
+                // get the new branch name
+                JTextField newNameField = (JTextField) branchRenamePanel.getClientProperty("newNameField");
+                String newBranchName = newNameField.getText();
+
+                if (oldBranchName == null || oldBranchName.trim().isEmpty() || newBranchName.trim().isEmpty()) {
+                    showErrorMessage("No branch selected or new branch name is empty.", "No Branch Selected / Empty Name");
+                    return;
+                }
+
+                git.branchRename().setOldName(oldBranchName).setNewName(newBranchName).call();
+                git.close();
+
+                JOptionPane.showMessageDialog(gui, "Successfully Renamed Branch", "Branch Rename Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            gui.repaint();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during the branch renaming process.", "Branch Rename Error");
+        }
+    }
+
+    private JPanel createBranchRenamePanel(Git git) {
+        JPanel branchRenamePanel = new JPanel(new BorderLayout(3, 3));
+
+        try {
+            List<String> branches = git.branchList().call().stream().map(Ref::getName).collect(Collectors.toList());
+
+            DefaultListModel<String> branchListModel = new DefaultListModel<>();
+            for (String branch : branches) {
+                branchListModel.addElement(branch);
+            }
+            JList<String> branchList = new JList<>(branchListModel);
+
+            JTextField newNameField = new JTextField();
+            JLabel newNameLabel = new JLabel("New Branch Name");
+
+            JPanel newNamePanel = new JPanel(new BorderLayout());
+            newNamePanel.add(newNameLabel, BorderLayout.NORTH);
+            newNamePanel.add(newNameField, BorderLayout.CENTER);
+
+            branchRenamePanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
+            branchRenamePanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
+            branchRenamePanel.add(newNamePanel, BorderLayout.SOUTH);
+
+            branchRenamePanel.putClientProperty("branchList", branchList);
+            branchRenamePanel.putClientProperty("newNameField", newNameField);
+        } catch (GitAPIException e) {
+            showErrorMessage("Failed to load branches.", "Branch Load Error");
+        }
+
+        return branchRenamePanel;
+    }
 
     private void branchCheckoutButton() {
         if (currentFile == null) {
@@ -1559,7 +1654,7 @@ public class FileManager {
             }
             JList<String> branchList = new JList<>(branchListModel);
 
-            branchCheckoutPanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchCheckoutPanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
             branchCheckoutPanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
             branchCheckoutPanel.putClientProperty("branchList", branchList);
         } catch (GitAPIException e) {
