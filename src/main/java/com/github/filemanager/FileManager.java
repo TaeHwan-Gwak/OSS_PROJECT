@@ -1331,7 +1331,6 @@ public class FileManager {
 
 
         gui.repaint();
-
     }
 
     private JPanel createGraphPanel() {
