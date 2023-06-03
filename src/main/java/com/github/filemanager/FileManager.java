@@ -43,18 +43,22 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import javax.swing.table.*;
 import javax.swing.tree.*;
 
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jgit.api.*;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.merge.MergeStrategy;
-import org.eclipse.jgit.merge.Merger;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
 /**
  * A basic File Manager. Requires 1.6+ for the Desktop &amp; SwingWorker classes, amongst other
@@ -138,30 +142,27 @@ public class FileManager {
 
     // git Buttons
     private JButton initButton;
+    private JButton cloneButton;
     private JButton addButton;
     private JButton restoreButton;
     private JButton rmButton;
     private JButton mvButton;
     private JButton commitButton;
+    private JButton commitHistoryButton;
 
     // git Branch Buttons
     private JButton branchCreateButton;
     private JButton branchDeleteButton;
+    private JButton branchRenameButton;
     private JButton branchCheckoutButton;
 
-    // git Merge Buttons
+    // git Merge Button
     private JButton mergeButton;
-
 
     private JLabel fileName;
     private JTextField path;
     private JLabel date;
     private JLabel size;
-    private JCheckBox readable;
-    private JCheckBox writable;
-    private JCheckBox executable;
-    private JRadioButton isDirectory;
-    private JRadioButton isFile;
 
 
     /* GUI options/containers for new File/Directory creation.  Created lazily. */
@@ -269,7 +270,7 @@ public class FileManager {
             size = new JLabel();
             fileDetailsValues.add(size);
             //current branch
-            fileDetailsLabels.add(new JLabel("Current Branch", JLabel.TRAILING));
+            fileDetailsLabels.add(new JLabel("Current Branch",JLabel.TRAILING));
             currentBranch = new JTextField(5);
             currentBranch.setEditable(false);
             fileDetailsValues.add(currentBranch);
@@ -356,7 +357,6 @@ public class FileManager {
             toolBar.add(new JLabel("git "));
 
             initButton = new JButton("init");
-            //initButton.setMnemonic('');
             initButton.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent ae) {
@@ -365,7 +365,14 @@ public class FileManager {
                     });
             toolBar.add(initButton);
 
-            // cloneButton soon
+            cloneButton = new JButton("clone");
+            cloneButton.addActionListener(
+                    new ActionListener() {
+                        public void actionPerformed(ActionEvent ae) {
+                            cloneButton();
+                        }
+                    });
+            toolBar.add(cloneButton);
 
             toolBar.addSeparator();
 
@@ -418,6 +425,17 @@ public class FileManager {
             );
             toolBar.add(commitButton);
 
+            commitHistoryButton = new JButton("history");
+            commitHistoryButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent ae) {
+                            commitHistoryButton();
+                        }
+                    }
+            );
+            toolBar.add(commitHistoryButton);
+
             // git branch Buttons
             toolBar.addSeparator();
 
@@ -427,9 +445,7 @@ public class FileManager {
             branchCreateButton.addActionListener(
                     new ActionListener() {
                         @Override
-                        public void actionPerformed(ActionEvent e) {
-                            branchCreateButton();
-                        }
+                        public void actionPerformed(ActionEvent e) { branchCreateButton(); }
                     }
             );
             toolBar.add(branchCreateButton);
@@ -445,6 +461,17 @@ public class FileManager {
             );
             toolBar.add(branchDeleteButton);
 
+            branchRenameButton = new JButton("rename");
+            branchRenameButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            branchRenameButton();
+                        }
+                    }
+            );
+            toolBar.add(branchRenameButton);
+
             branchCheckoutButton = new JButton("checkout");
             branchCheckoutButton.addActionListener(
                     new ActionListener() {
@@ -456,21 +483,16 @@ public class FileManager {
             );
             toolBar.add(branchCheckoutButton);
 
-            // git merge Buttons
-
             toolBar.addSeparator();
 
-            mergeButton = new JButton("merge");
-            mergeButton.addActionListener(
+            branchCreateButton = new JButton("merge");
+            branchCreateButton.addActionListener(
                     new ActionListener() {
                         @Override
-                        public void actionPerformed(ActionEvent e) {
-                            mergeButton();
-                        }
+                        public void actionPerformed(ActionEvent e) { mergeButton(); }
                     }
             );
-            toolBar.add(mergeButton);
-
+            toolBar.add(branchCreateButton);
 
             JPanel fileView = new JPanel(new BorderLayout(3, 3));
 
@@ -512,17 +534,16 @@ public class FileManager {
         // not found!
         return null;
     }
-
-    private String getCurrentBranch(File currentFile) {
+    private String getCurrentBranch(File currentFile){
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
             return "";
         }
-        try {
+        try{
             Repository repository = Git.open(new File(gitDir.getPath())).getRepository();
             String branch = repository.getBranch();
             return branch;
-        } catch (IOException e) {
+        } catch(IOException e) {
             return "";
         }
     }
@@ -685,6 +706,167 @@ public class FileManager {
         gui.repaint();
     }
 
+    // git Button methods.
+    private void initButton() {
+        if (currentFile == null) {
+            showErrorMessage("No file selected for git init.", "Select File");
+            return;
+        }
+
+        // file can't use git init command.
+        if (!currentFile.isDirectory()){
+            showErrorMessage("The file can't use git. choose the Directory.","File Can't Use Git");
+            return;
+        }
+
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir != null) {
+            showErrorMessage("This directory already use git.","Already Use Git Directory");
+            return; // Exit the method without creating the init panel
+        }
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui,
+                        "Are you sure you want to git init this file?",
+                        "Git Init File",
+                        JOptionPane.ERROR_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                //디렉토리 아닐 시 에러
+                Process p;
+                String cmd = "cd " + currentFile.getPath() + " && git init";
+                String[] command = {"/bin/sh", "-c", cmd};
+                p = Runtime.getRuntime().exec(command);
+            } catch (Throwable t) {
+                showThrowable(t);
+            }
+        }
+        gui.repaint();
+    }
+
+    private void cloneButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for git clone.", "Select Location");
+            return;
+        }
+
+        // JGit can't clone if the directory already contains objects.
+        if(currentFile.listFiles() != null){
+            showErrorMessage("Destination path is not an empty directory.", "Already Exists");
+            return;
+        }
+
+        // to separate ui and model to reopen the clone button.
+        JPanel clonePanel = createClonePanel();
+
+        int result =
+                JOptionPane.showConfirmDialog(
+                        gui, clonePanel, "Clone", JOptionPane.OK_CANCEL_OPTION);
+
+        // if user clicked ok. do clone.
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                JTextField repositoryAddressField = (JTextField) clonePanel.getClientProperty("repositoryAddressField");
+                String repositoryAddress = repositoryAddressField.getText();
+                if (repositoryAddress.trim().isEmpty()) {
+                    showErrorMessage("Repository address can't be empty.", "Empty Repository Address");
+                    return;
+                }
+
+                String path = currentFile.getPath();
+
+                try {
+                    Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).call();
+                } catch (TransportException e){
+                    // TransportException => repository is private because last clone had no user information
+                    String ID, token;
+                    File userInformation = new File("user_information.txt");
+                    if(userInformation.exists()){
+                        // user_information.txt already exists => user information is stored in it
+                        // get user information from .txt file
+                        BufferedReader reader = new BufferedReader(new FileReader(userInformation));
+                        ID = reader.readLine();
+                        token = reader.readLine();
+
+                        Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).
+                                setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
+                    }
+                    else {
+                        // use new panel to get userID and token
+                        JPanel insertIDPanel = createInsertIDPanel();
+                        int res = JOptionPane.showConfirmDialog(
+                                gui, insertIDPanel, "GitHub User Information", JOptionPane.OK_CANCEL_OPTION);
+                        if (res == JOptionPane.OK_OPTION) {
+                            // get ID and token from user
+                            JTextField IDTextField = (JTextField) insertIDPanel.getClientProperty("ID");
+                            ID = IDTextField.getText();
+                            JTextField tokenTextField = (JTextField) insertIDPanel.getClientProperty("token");
+                            token = tokenTextField.getText();
+
+                            // create .txt file and store user information in it
+                            userInformation.createNewFile();
+                            BufferedWriter writer = new BufferedWriter(new FileWriter(userInformation));
+                            writer.write(ID);
+                            writer.newLine();
+                            writer.write(token);
+                            writer.flush();
+
+                            Git.cloneRepository().setURI(repositoryAddress).setDirectory(currentFile).
+                                    setCredentialsProvider((new UsernamePasswordCredentialsProvider(ID, token))).call();
+                        } else
+                            return;
+                    }
+                }
+
+                JOptionPane.showMessageDialog(gui, "Successfully Cloned", "Clone Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException | GitAPIException e) {
+                showErrorMessage("An error occurred during cloning process.", "Clone Error");
+            }
+        }
+
+        gui.repaint();
+    }
+
+    private JPanel createClonePanel() {
+        JPanel clonePanel = new JPanel(new BorderLayout(3, 3));
+
+        // to get the address of repository
+        clonePanel.add(new JLabel("Repository Address"), BorderLayout.NORTH);
+        JTextField repositoryAddressField = new JTextField(30);
+        clonePanel.add(repositoryAddressField, BorderLayout.CENTER);
+
+        clonePanel.putClientProperty("repositoryAddressField", repositoryAddressField);
+
+        return clonePanel;
+    }
+
+    private JPanel createInsertIDPanel() {
+        JPanel insertIDPanel = new JPanel(new BorderLayout(3, 3));
+
+        insertIDPanel.add(new JLabel("Please insert gitHub user information."),BorderLayout.NORTH);
+
+        // get ID from user
+        JPanel IDPanel = new JPanel(new BorderLayout(3, 3));
+        IDPanel.add(new JLabel("ID"), BorderLayout.WEST);
+        JTextField IDField = new JTextField(15);
+        IDPanel.add(IDField, BorderLayout.EAST);
+        insertIDPanel.add(IDPanel, BorderLayout.CENTER);
+
+        insertIDPanel.putClientProperty("ID", IDField);
+
+        // get token from user
+        JPanel tokenPanel = new JPanel(new BorderLayout(3, 3));
+        tokenPanel.add(new JLabel("token"), BorderLayout.WEST);
+        JPasswordField tokenField = new JPasswordField(15);
+        tokenPanel.add(tokenField, BorderLayout.EAST);
+        insertIDPanel.add(tokenPanel, BorderLayout.SOUTH);
+
+        insertIDPanel.putClientProperty("token", tokenField);
+
+        return insertIDPanel;
+    }
 
     private void addButton() {
         if (currentFile == null) {
@@ -695,7 +877,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating the add Panel.
         }
 
@@ -733,7 +915,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating the restore Panel.
         }
 
@@ -774,11 +956,11 @@ public class FileManager {
                     output.append(line).append("\n");
 
                     status = output.toString().substring(0, 2);
-                    if (status.equals("??")) {
-                        showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
+                    if(status.equals("??")) {
+                        showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
                         return;
-                    } else if (status.equals("A ")) {
-                        showErrorMessage("If you want restore, click restore --staged", "Added File ?");
+                    } else if(status.equals("A ")) {
+                        showErrorMessage("If you want restore, click restore --staged","Added File ?");
                         return;
                     }
 
@@ -815,8 +997,8 @@ public class FileManager {
                     output.append(line).append("\n");
 
                     status = output.toString().substring(0, 2);
-                    if (status.equals("??")) {
-                        showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
+                    if(status.equals("??")) {
+                        showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
                         return;
                     }
 
@@ -843,7 +1025,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating the rm Panel.
         }
 
@@ -872,8 +1054,8 @@ public class FileManager {
                 output.append(line).append("\n");
 
                 status = output.toString().substring(0, 2);
-                if (status.equals("??")) {
-                    showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
+                if(status.equals("??")) {
+                    showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
                     return;
                 }
             }
@@ -935,7 +1117,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating the mv Panel.
         }
 
@@ -963,8 +1145,8 @@ public class FileManager {
                 output.append(line).append("\n");
 
                 status = output.toString().substring(0, 2);
-                if (status.equals("??")) {
-                    showErrorMessage("Git doesn't trace that file. Press add first.", "Untracked File");
+                if(status.equals("??")) {
+                    showErrorMessage("Git doesn't trace that file. Press add first.","Untracked File");
                     return;
                 }
             }
@@ -977,18 +1159,18 @@ public class FileManager {
                 JOptionPane.showInputDialog(gui,
                         "Text new file name or new path you want to git mv this file.");
 
-        //moveTo가 이동할 path이고, repository 밖의 경로일 경우 error
-        if (moveTo.contains("/")) {
+        // moveTo가 이동할 path이고, repository 밖의 경로일 경우 error
+        if(moveTo.contains("/")){
             gitDir = findGitDir(currentFile.getAbsoluteFile());
             File newFile = new File(moveTo);
             File newGitDir = findGitDir(newFile.getAbsoluteFile());
             if (!gitDir.equals(newGitDir)) {
-                showErrorMessage("This path is outside repository.", "Outside Repository");
+                showErrorMessage("This path is outside repository.","Outside Repository");
                 return; // Exit the method without creating the mv Panel.
             }
         }
 
-        if (moveTo != null) {
+        if(moveTo != null) {
             try {
 
                 String file = currentFile.getName();
@@ -1006,132 +1188,16 @@ public class FileManager {
         gui.repaint();
     }
 
-    private void initButton() {
-        if (currentFile == null) {
-            showErrorMessage("No file selected for git init.", "Select File");
-            return;
-        }
-
-        // file can't use git init command.
-        if (!currentFile.isDirectory()) {
-            showErrorMessage("The file can't use git. choose the Directory.", "File Can't Use Git");
-            return;
-        }
-
-        File gitDir = findGitDir(currentFile.getAbsoluteFile());
-        if (gitDir != null) {
-            showErrorMessage("This directory already use git.", "Already Use Git Directory");
-            return; // Exit the method without creating the init panel
-        }
-
-        int result =
-                JOptionPane.showConfirmDialog(
-                        gui,
-                        "Are you sure you want to git init this file?",
-                        "Git Init File",
-                        JOptionPane.ERROR_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
-            try {
-                //디렉토리 아닐 시 에러
-                Process p;
-                String cmd = "cd " + currentFile.getPath() + " && git init";
-                String[] command = {"/bin/sh", "-c", cmd};
-                p = Runtime.getRuntime().exec(command);
-            } catch (Throwable t) {
-                showThrowable(t);
-            }
-        }
-        gui.repaint();
-    }
-
-    private void showErrorMessage(String errorMessage, String errorTitle) {
-        JOptionPane.showMessageDialog(gui, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
-    }
-
-    private void showThrowable(Throwable t) {
-        t.printStackTrace();
-        JOptionPane.showMessageDialog(gui, t.toString(), t.getMessage(), JOptionPane.ERROR_MESSAGE);
-        gui.repaint();
-    }
-
-    /**
-     * Update the table on the EDT
-     */
-    private void setTableData(final File[] files) {
-        SwingUtilities.invokeLater(
-                new Runnable() {
-                    public void run() {
-                        if (fileTableModel == null) {
-                            fileTableModel = new FileTableModel();
-                            table.setModel(fileTableModel);
-                        }
-                        table.getSelectionModel()
-                                .removeListSelectionListener(listSelectionListener);
-                        fileTableModel.setFiles(files);
-                        table.getSelectionModel().addListSelectionListener(listSelectionListener);
-                        if (!cellSizesSet) {
-                            Icon icon = fileSystemView.getSystemIcon(files[0]);
-
-                            // size adjustment to better account for icons
-                            table.setRowHeight(icon.getIconHeight() + rowIconPadding);
-
-                            setColumnWidth(0, -1);
-                            setColumnWidth(3, 60);
-                            table.getColumnModel().getColumn(3).setMaxWidth(120);
-                            setColumnWidth(4, -1);
-                            setColumnWidth(5, -1);
-                            setColumnWidth(6, -1);
-                            setColumnWidth(7, -1);
-                            setColumnWidth(8, -1);
-                            setColumnWidth(9, -1);
-
-                            cellSizesSet = true;
-                        }
-                    }
-                });
-    }
-
-    private void setColumnWidth(int column, int width) {
-        TableColumn tableColumn = table.getColumnModel().getColumn(column);
-        if (width < 0) {
-            // use the preferred width of the header..
-            JLabel label = new JLabel((String) tableColumn.getHeaderValue());
-            Dimension preferred = label.getPreferredSize();
-            // altered 10->14 as per camickr comment.
-            width = (int) preferred.getWidth() + 14;
-        }
-        tableColumn.setPreferredWidth(width);
-        tableColumn.setMaxWidth(width);
-        tableColumn.setMinWidth(width);
-    }
-
-
-    /**
-     * findGitDir do finding the .git dir from currentFile variance.
-     * if There is .git return .git's file.
-     * else return null
-     */
-    private static File findGitDir(File directory) {
-        File gitDir = new File(directory, ".git");
-        if (gitDir.exists() && gitDir.isDirectory()) {
-            return gitDir;
-        } else {
-            File parent = directory.getParentFile();
-            return parent != null ? findGitDir(parent) : null;
-        }
-    }
-
     private void commitButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for commit.", "Select Location");
             return;
         }
 
-
         // Handle the case where there is no .git directory found
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git", "No Git Directory");
+            showErrorMessage("This directory doesn't use git","No Git Directory");
             return; // Exit the method without creating the commit panel
         }
 
@@ -1184,7 +1250,7 @@ public class FileManager {
             File gitDir = findGitDir(currentFile.getAbsoluteFile());
             if (gitDir == null) {
                 // Handle the case where there is no .git directory found
-                showErrorMessage("This directory doesn't use git", "No Git Directory");
+                showErrorMessage("This directory doesn't use git","No Git Directory");
             }
 
             // get the repository to use git command.
@@ -1227,6 +1293,101 @@ public class FileManager {
         return commitPanel;
     }
 
+    private void commitHistoryButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for viewing commit history.", "Select Location");
+            return;
+        }
+
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git.", "No Git Directory");
+            return;
+        }
+
+        try {
+            Repository repository = new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+            Git git = new Git(repository);
+            Iterable<RevCommit> logs = git.log().all().call();
+
+            JPanel commitHistoryPanel = createCommitHistoryPanel(logs);
+
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, commitHistoryPanel, "History", JOptionPane.OK_CANCEL_OPTION);
+
+            if(result == JOptionPane.OK_OPTION){
+                JList<String> commitList = (JList<String>) commitHistoryPanel.getClientProperty("commitList");
+                String commitId = commitList.getSelectedValue().split(" -")[0];
+
+                RevCommit selectedCommit = getCommitById(git, commitId);
+
+                JPanel commitDetailsPanel = createCommitDetailsPanel(selectedCommit);
+                JOptionPane.showMessageDialog(gui, commitDetailsPanel, commitId.substring(0,10), JOptionPane.PLAIN_MESSAGE);
+            }
+            git.close();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during loading the commit history.", "Commit History Error");
+        }
+
+        gui.repaint();
+    }
+
+    private JPanel createCommitHistoryPanel(Iterable<RevCommit> logs) {
+        JPanel commitHistoryPanel = new JPanel(new BorderLayout(3, 3));
+        DefaultListModel<String> commitListModel = new DefaultListModel<>();
+        for (RevCommit rev : logs) {
+            commitListModel.addElement(rev.getId().getName() + " - [" + rev.getShortMessage() + "]");
+        }
+        JList<String> commitList = new JList<>(commitListModel);
+        commitHistoryPanel.add(new JScrollPane(commitList), BorderLayout.CENTER);
+
+        commitHistoryPanel.putClientProperty("commitList", commitList);
+        return commitHistoryPanel;
+    }
+
+    private RevCommit getCommitById(Git git, String commitId) throws IOException {
+        try (RevWalk revWalk = new RevWalk(git.getRepository())) {
+            return revWalk.parseCommit(ObjectId.fromString(commitId));
+        }
+    }
+
+    private JPanel createCommitDetailsPanel(RevCommit commit) {
+        JPanel commitDetailsPanel = new JPanel();
+        commitDetailsPanel.setLayout(new BoxLayout(commitDetailsPanel, BoxLayout.Y_AXIS));
+
+        commitDetailsPanel.add(new JLabel("- Author"));
+        JTextField authorField = new JTextField(commit.getAuthorIdent().getName());
+        authorField.setEditable(false);
+        commitDetailsPanel.add(authorField);
+
+        commitDetailsPanel.add(new JLabel("- Date"));
+        JTextField dateField = new JTextField(new Date(commit.getCommitTime() * 1000L).toString());
+        dateField.setEditable(false);
+        commitDetailsPanel.add(dateField);
+
+        commitDetailsPanel.add(new JLabel("- Parent"));
+        if(commit.getParentCount() != 0) {
+            JTextField parentField;
+            RevCommit[] parents = commit.getParents();
+            ArrayList<String> parentList = new ArrayList<>();
+            for (int i = 0; i < commit.getParentCount(); i++) {
+                parentList.add(i, parents[i].getId().getName().substring(0,10));
+                parentField = new JTextField(parentList.get(i));
+                parentField.setEditable(false);
+                commitDetailsPanel.add(parentField);
+            }
+        }
+
+        commitDetailsPanel.add(new JLabel("- Commit Message"));
+        JTextField messageField = new JTextField(commit.getShortMessage());
+        messageField.setEditable(false);
+        commitDetailsPanel.add(messageField);
+
+        return commitDetailsPanel;
+    }
+
+    // git Branch Button methods
     private void branchCreateButton() {
         if (currentFile == null) {
             showErrorMessage("No location selected for branch creation.", "Select Location");
@@ -1236,18 +1397,18 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating branchCreatePanel.
         }
 
-        // to separate ui and model to reopen the branch create button.
+        // separate ui and model
         JPanel branchCreatePanel = createBranchCreatePanel();
 
         int result =
                 JOptionPane.showConfirmDialog(
                         gui, branchCreatePanel, "Create Branch", JOptionPane.OK_CANCEL_OPTION);
 
-        // if user clicked ok. do branch creation.
+        // if user click ok. do branch creation.
         if (result == JOptionPane.OK_OPTION) {
             try {
                 JTextField branchNameField = (JTextField) branchCreatePanel.getClientProperty("branchNameField");
@@ -1287,7 +1448,7 @@ public class FileManager {
         return branchCreatePanel;
     }
 
-    private void branchDeleteButton() {
+    private void branchDeleteButton(){
         if (currentFile == null) {
             showErrorMessage("No location selected for branch deletion.", "Select Location");
             return;
@@ -1296,7 +1457,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating branchDeletePanel.
         }
 
@@ -1307,16 +1468,19 @@ public class FileManager {
 
             Git git = new Git(repository);
 
+            // separate ui and model
             JPanel branchDeletePanel = createBranchDeletePanel(git);
 
             int result =
                     JOptionPane.showConfirmDialog(
                             gui, branchDeletePanel, "Delete Branch", JOptionPane.OK_CANCEL_OPTION);
 
-            // if user clicked ok. do branch deletion.
+            // if user click ok. do branch deletion.
             if (result == JOptionPane.OK_OPTION) {
+                // get the chosen branch
                 JList<String> branchList = (JList<String>) branchDeletePanel.getClientProperty("branchList");
                 String branchName = branchList.getSelectedValue();
+
 
                 if (branchName == null || branchName.trim().isEmpty()) {
                     showErrorMessage("No branch selected.", "No Branch Selected");
@@ -1347,7 +1511,7 @@ public class FileManager {
             }
             JList<String> branchList = new JList<>(branchListModel);
 
-            branchDeletePanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchDeletePanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
             branchDeletePanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
             branchDeletePanel.putClientProperty("branchList", branchList);
         } catch (GitAPIException e) {
@@ -1358,8 +1522,90 @@ public class FileManager {
     }
 
 
-    // branch rename button soon
+    private void branchRenameButton() {
+        if (currentFile == null) {
+            showErrorMessage("No location selected for branch renaming.", "Select Location");
+            return;
+        }
 
+        // if the directory doesn't use git, can't use git command.
+        File gitDir = findGitDir(currentFile.getAbsoluteFile());
+        if (gitDir == null) {
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
+            return; // Exit the method without creating branchRenamePanel.
+        }
+
+        try {
+            Repository repository =
+                    new FileRepositoryBuilder().setWorkTree(currentFile.getAbsoluteFile()).setGitDir(gitDir).build();
+
+            Git git = new Git(repository);
+
+            // separate ui and model
+            JPanel branchRenamePanel = createBranchRenamePanel(git);
+
+            int result =
+                    JOptionPane.showConfirmDialog(
+                            gui, branchRenamePanel, "Rename Branch", JOptionPane.OK_CANCEL_OPTION);
+
+            if (result == JOptionPane.OK_OPTION) {
+                JList<String> branchList = (JList<String>) branchRenamePanel.getClientProperty("branchList");
+
+                // get the old branch name
+                String oldBranchName = branchList.getSelectedValue();
+
+                // get the new branch name
+                JTextField newNameField = (JTextField) branchRenamePanel.getClientProperty("newNameField");
+                String newBranchName = newNameField.getText();
+
+                if (oldBranchName == null || oldBranchName.trim().isEmpty() || newBranchName.trim().isEmpty()) {
+                    showErrorMessage("No branch selected or new branch name is empty.", "No Branch Selected / Empty Name");
+                    return;
+                }
+
+                git.branchRename().setOldName(oldBranchName).setNewName(newBranchName).call();
+                git.close();
+
+                JOptionPane.showMessageDialog(gui, "Successfully Renamed Branch", "Branch Rename Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            gui.repaint();
+        } catch (IOException | GitAPIException e) {
+            showErrorMessage("An error occurred during the branch renaming process.", "Branch Rename Error");
+        }
+    }
+
+    private JPanel createBranchRenamePanel(Git git) {
+        JPanel branchRenamePanel = new JPanel(new BorderLayout(3, 3));
+
+        try {
+            List<String> branches = git.branchList().call().stream().map(Ref::getName).collect(Collectors.toList());
+
+            DefaultListModel<String> branchListModel = new DefaultListModel<>();
+            for (String branch : branches) {
+                branchListModel.addElement(branch);
+            }
+            JList<String> branchList = new JList<>(branchListModel);
+
+            JTextField newNameField = new JTextField();
+            JLabel newNameLabel = new JLabel("New Branch Name");
+
+            JPanel newNamePanel = new JPanel(new BorderLayout());
+            newNamePanel.add(newNameLabel, BorderLayout.NORTH);
+            newNamePanel.add(newNameField, BorderLayout.CENTER);
+
+            branchRenamePanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
+            branchRenamePanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
+            branchRenamePanel.add(newNamePanel, BorderLayout.SOUTH);
+
+            branchRenamePanel.putClientProperty("branchList", branchList);
+            branchRenamePanel.putClientProperty("newNameField", newNameField);
+        } catch (GitAPIException e) {
+            showErrorMessage("Failed to load branches.", "Branch Load Error");
+        }
+
+        return branchRenamePanel;
+    }
 
     private void branchCheckoutButton() {
         if (currentFile == null) {
@@ -1370,7 +1616,7 @@ public class FileManager {
         // if the directory doesn't use git, can't use git command.
         File gitDir = findGitDir(currentFile.getAbsoluteFile());
         if (gitDir == null) {
-            showErrorMessage("This directory doesn't use git. Press init Button first.", "No Git Directory");
+            showErrorMessage("This directory doesn't use git. Press init Button first.","No Git Directory");
             return; // Exit the method without creating branchCheckoutPanel.
         }
 
@@ -1421,7 +1667,7 @@ public class FileManager {
             }
             JList<String> branchList = new JList<>(branchListModel);
 
-            branchCheckoutPanel.add(new JLabel("Branches"), BorderLayout.NORTH);
+            branchCheckoutPanel.add(new JLabel("Branch List"), BorderLayout.NORTH);
             branchCheckoutPanel.add(new JScrollPane(branchList), BorderLayout.CENTER);
             branchCheckoutPanel.putClientProperty("branchList", branchList);
         } catch (GitAPIException e) {
@@ -1540,6 +1786,83 @@ public class FileManager {
         }
 
         return branchPanel;
+    }
+
+    private void showErrorMessage(String errorMessage, String errorTitle) {
+        JOptionPane.showMessageDialog(gui, errorMessage, errorTitle, JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void showThrowable(Throwable t) {
+        t.printStackTrace();
+        JOptionPane.showMessageDialog(gui, t.toString(), t.getMessage(), JOptionPane.ERROR_MESSAGE);
+        gui.repaint();
+    }
+
+    /**
+     * Update the table on the EDT
+     */
+    private void setTableData(final File[] files) {
+        SwingUtilities.invokeLater(
+                new Runnable() {
+                    public void run() {
+                        if (fileTableModel == null) {
+                            fileTableModel = new FileTableModel();
+                            table.setModel(fileTableModel);
+                        }
+                        table.getSelectionModel()
+                                .removeListSelectionListener(listSelectionListener);
+                        fileTableModel.setFiles(files);
+                        table.getSelectionModel().addListSelectionListener(listSelectionListener);
+                        if (!cellSizesSet) {
+                            Icon icon = fileSystemView.getSystemIcon(files[0]);
+
+                            // size adjustment to better account for icons
+                            table.setRowHeight(icon.getIconHeight() + rowIconPadding);
+
+                            setColumnWidth(0, -1);
+                            setColumnWidth(3, 60);
+                            table.getColumnModel().getColumn(3).setMaxWidth(120);
+                            setColumnWidth(4, -1);
+                            setColumnWidth(5, -1);
+                            setColumnWidth(6, -1);
+                            setColumnWidth(7, -1);
+                            setColumnWidth(8, -1);
+                            setColumnWidth(9, -1);
+
+                            cellSizesSet = true;
+                        }
+                    }
+                });
+    }
+
+    private void setColumnWidth(int column, int width) {
+        TableColumn tableColumn = table.getColumnModel().getColumn(column);
+        if (width < 0) {
+            // use the preferred width of the header..
+            JLabel label = new JLabel((String) tableColumn.getHeaderValue());
+            Dimension preferred = label.getPreferredSize();
+            // altered 10->14 as per camickr comment.
+            width = (int) preferred.getWidth() + 14;
+        }
+        tableColumn.setPreferredWidth(width);
+        tableColumn.setMaxWidth(width);
+        tableColumn.setMinWidth(width);
+    }
+
+
+    /**
+     * findGitDir do finding the .git dir from currentFile variance.
+     * if There is .git return .git's file.
+     * else return null
+     * */
+    private static File findGitDir(File directory) {
+        File gitDir = new File(directory, ".git");
+        if (gitDir.exists() && gitDir.isDirectory()) {
+            return gitDir;
+        } else {
+            File parent = directory.getParentFile();
+            return parent != null ? findGitDir(parent) : null;
+        }
     }
 
     /**
