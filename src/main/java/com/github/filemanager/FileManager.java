@@ -148,6 +148,7 @@ public class FileManager {
     private JButton rmButton;
     private JButton mvButton;
     private JButton commitButton;
+    private JButton commitGraphButton;
     private JButton commitHistoryButton;
 
     // git Branch Buttons
@@ -424,6 +425,17 @@ public class FileManager {
                     }
             );
             toolBar.add(commitButton);
+
+            commitGraphButton = new JButton("graph");
+            commitGraphButton.addActionListener(
+                    new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent ae) {
+                            commitGraphButton();
+                        }
+                    }
+            );
+            toolBar.add(commitGraphButton);
 
             commitHistoryButton = new JButton("history");
             commitHistoryButton.addActionListener(
@@ -1291,6 +1303,10 @@ public class FileManager {
         }
 
         return commitPanel;
+    }
+
+    private void commitGraphButton() {
+
     }
 
     private void commitHistoryButton() {
