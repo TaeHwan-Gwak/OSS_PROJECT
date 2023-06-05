@@ -1825,7 +1825,7 @@ public class FileManager {
                     output.append(line).append("\n");
                 }
 
-                if (!output.isEmpty() && !output.toString().substring(0, 3).equals("cat")) {
+                if (output.length() != 0 && !output.toString().substring(0, 3).equals("cat")) {
                     String errorCmd = "cd " + path + " && git merge --abort";
                     String[] errorCommand = {"/bin/sh", "-c", errorCmd};
                     p = Runtime.getRuntime().exec(errorCommand);

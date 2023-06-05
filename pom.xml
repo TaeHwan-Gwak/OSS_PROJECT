@@ -21,7 +21,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.6.2</version>
         <configuration>
-          <release>20</release>
+          <source>1.8</source>
+          <target>1.8</target>
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
@@ -144,7 +145,7 @@
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
-      <version>6.5.0.202303070854-r</version>
+      <version>5.9.0.202009080501-r</version>
     </dependency>
   </dependencies>
 </project>
