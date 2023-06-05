@@ -9,12 +9,12 @@ A simple Java/Swing native file manager capable of performing Git repository man
 
 ***
 
-## 프로젝트 소개
- file-manager는 javadev/file-manager를 기반으로 simple Git repository management를 수행할 수 있도록 개발된 Gui이다. 기존 file-manager에 포함된 open, edit, rename 등의 file-explorer의 기능 뿐 아니라 Git repository를 creation하고 git add, git commit 과 같은 git 명령어를 수행할 수 있는 버튼을 추가하여 좀 더 간편하게 Git repository management를 할 수 있도록 했다.
+## Project Introduction
+ file-manager is a GUI developed to perform simple Git repository management based on javadev/file-manager. In addition to file-explorer functions such as open, edit, and rename, which are included in the existing file-manager, buttons to execute Git commands have been added to make Git repository management more convenient.
 
 ***
 
-## 개발 기간 및 멤버 구성
+## Development period and Member composition
 > 2023.04.27. ~ 2023.05.13.
 
 > 곽태환 @TaeHwan-Gwak : CAU-CSE
@@ -25,7 +25,7 @@ A simple Java/Swing native file manager capable of performing Git repository man
 
 ***
 
-## 개발 환경
+## Development Environment
 + Java 
 + openJDK version 20.0.1
 + IDE : IntelliJ IDEA
@@ -33,16 +33,22 @@ A simple Java/Swing native file manager capable of performing Git repository man
 
 ***
 
-## 주요 기능
+## Main function
 ### File-Management
  1. The file browsing starts from the root directory of the computer.
- 2. open, edit, new(create), rename, delete 의 기능 수행 가능.
+ 2. file open, edit, new(create), rename, delete function.
 
 ### Version-Controlling
- 1. status 확인을 통해 GitDir 인지 None, 즉 설정되어 있지 않은지 확인 가능.
- 2. git add, git restore, git rm, git mv의 깃 명령어 수행 가능. (git restore, git rm 의 경우 버튼을 누른 후 세부적으로 선택 가능)
- 3. git commit : 버튼을 눌렀을 때 현재 staged 파일이 어떤 것들이 있는지 확인 후 commit 가능.
- 4. git init : 현재 Directory 에 repository creation 이 선언되었을 때, a new git repository를 생성.
+ 1. By checking the status, can check whether GitDir is None, that is, it is not set.
+ 2. Git commands such as git add, git restore, git rm, git mv can be executed. (For git restore and git rm, you can select in detail after pressing the button)
+ 3. git commit : When click the button, can commit after checking what the currently staged files are.
+ 4. git init : When repository creation is declared in the current directory, a new git repository is created.
+
+### Git repository management service
+ 1. Branch management : branch create, delete, rename, checkout
+ 2. Branch merge(not rebase) : abort in case of conflict
+ 3. Simple git commit history : shows the log as a graph, and also shows a brief commit description.
+ 4. Git clone from Github
 
 ***
 
@@ -51,9 +57,9 @@ A simple Java/Swing native file manager capable of performing Git repository man
  2. Run the 'fileManager.java'
  
  
-+ 오류 발생 시 jgit 라이브러리 수동 설치 방법
++ How to manually install the jgit library when an error occurs
 
-pom.xml에 다음 코드 추가 후 설치
+Add the following code to pom.xml and install
 
 ```html
  <dependency>
@@ -66,7 +72,7 @@ pom.xml에 다음 코드 추가 후 설치
 ***
 
 ## Example
-### 기존 file-manager
+### original file-manager
 [![Screen short](https://raw.github.com/javadev/file-manager/master/filemanager2.png)](https://github.com/javadev/file-manager/)
-### file-manager capable of performing Git repository management
+### file-manager capable of performing Git command
 ![example1.png](example1.png)
