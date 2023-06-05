@@ -21,6 +21,15 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.6.2</version>
         <configuration>
+          <source>20</source> <!-- 사용 중인 JDK 버전에 맞게 설정 -->
+          <target>20</target> <!-- 사용 중인 JDK 버전에 맞게 설정 -->
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.6.2</version>
+        <configuration>
           <release>20</release>
           <encoding>UTF-8</encoding>
         </configuration>
