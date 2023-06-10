@@ -75,4 +75,4 @@ Add the following code to pom.xml and install
 ### original file-manager
 [![Screen short](https://raw.github.com/javadev/file-manager/master/filemanager2.png)](https://github.com/javadev/file-manager/)
 ### file-manager capable of performing Git command
-![example1.png](example1.png)
+![example3.png](example3.png)
