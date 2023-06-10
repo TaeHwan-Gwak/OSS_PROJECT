@@ -53,7 +53,7 @@ A simple Java/Swing native file manager capable of performing Git repository man
 ***
 
 ## How to Run
- 1. Clone the master branch from https://github.com/TaeHwan-Gwak/OSS_PROJECT_1
+ 1. Clone the master branch from https://github.com/TaeHwan-Gwak/OSS_PROJECT
  2. Run the 'fileManager.java'
  
  
